@@ -26,23 +26,27 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
     ```
 
 2. **Place the Files**
-    Move the script files into your server’s resources directory.
 
-3. **Add the Script to server.cfg**
-Ensure the script is started in your server.cfg by adding the following line:
+   Move the script files into your server’s resources directory.
+
+4. **Add the Script to server.cfg**
+
+   Ensure the script is started in your server.cfg by adding the following line:
     ```
     ensure FiveM-MilageVehicleFailure
     ```
 
-4. **Set up the DataBase**
-    Ensure that your database includes the necessary table. Use the following SQL to create the vehicle_kilometers table:
+5. **Set up the DataBase**
+
+   Ensure that your database includes the necessary table. Use the following SQL to create the vehicle_kilometers table:
     ```sql
     CREATE TABLE vehicle_kilometers (
     plate VARCHAR(8) PRIMARY KEY,
     kilometers DOUBLE NOT NULL,
     coords JSON
-);
-```
+    );
+   ```
 
-5. **Enjoy!**
-    The script now must work, edit the config.lua file to meet you requirements!
+6. **Enjoy!**
+
+   The script now must work, edit the config.lua file to meet you requirements!
