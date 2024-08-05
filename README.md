@@ -40,11 +40,10 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 
    Ensure that your database includes the necessary table. Use the following SQL to create the vehicle_kilometers table:
     ```sql
-    CREATE TABLE vehicle_kilometers (
-    plate VARCHAR(8) PRIMARY KEY,
-    kilometers DOUBLE NOT NULL,
-    coords JSON
-    );
+   CREATE TABLE IF NOT EXISTS vehicle_kilometers (
+    plate VARCHAR(8) NOT NULL PRIMARY KEY,
+    kilometers DOUBLE NOT NULL DEFAULT 0
+   );
    ```
 
 6. **Enjoy!**
