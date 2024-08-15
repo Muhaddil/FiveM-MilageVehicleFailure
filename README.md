@@ -6,9 +6,31 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 
 ## Features
 
-- **Engine Failure**: Completely disables the vehicle's engine and turns it off.
-- **Tire Burst**: Randomly causes one of the vehicle's tires to burst.
-- **Power Loss**: Reduces the engine power of the vehicle significantly.
+- **Motor Failure**: Completely disables the vehicle's engine by turning it off and reducing engine health to zero. After 30 seconds, the engine cools down and returns to normal.
+  
+- **Tire Burst**: Randomly causes one of the vehicle's tires to burst, if the tires can burst. The player is notified when a tire has burst.
+
+- **Power Loss**: Significantly reduces the engine power of the vehicle for 20 seconds. After that, the power is restored to its normal level.
+
+- **Petrol Loss**: Causes a fuel leak in the vehicle. The player is notified of the gasoline loss.
+
+- **Transmission Failure**: Temporarily disables the transmission by turning off the engine and reducing engine health. After 25 seconds, the transmission is repaired, and the engine is turned back on.
+
+- **Battery Drain**: Drains the vehicle's battery completely, turning off the engine. After 60 seconds, the battery recharges and the engine restarts.
+
+- **Radiator Leak**: Increases the engine temperature by 50 degrees due to a radiator leak. After 30 seconds, the leak is sealed, and the temperature returns to normal.
+
+- **Brake Failure**: Activates the vehicle's brakes and handbrake, simulating brake failure. After 20 seconds, the brakes are repaired.
+
+- **Suspension Damage**: Lowers the suspension height of the vehicle due to damage. After 30 seconds, the suspension is repaired, and the height returns to normal.
+
+- **Alternator Failure**: Reduces the battery health due to alternator malfunction. After 30 seconds, the alternator is repaired, and battery health improves.
+
+- **Transmission Fluid Leak**: Causes a leak in the transmission fluid, reducing its health. After 25 seconds, the leak is repaired, and transmission health is restored.
+
+- **Clutch Failure**: Temporarily lowers the clutch's efficiency, affecting gear shifting. After 20 seconds, the clutch is repaired.
+
+- **Fuel Filter Clogged**: Decreases the vehicle's fuel level by 50 units due to a clogged fuel filter. After 20 seconds, the filter is cleaned, and fuel level is restored.
 
 ## Requirements
 
@@ -40,17 +62,10 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 
    Ensure that your database includes the necessary table. Use the following SQL to create the vehicle_kilometers table:
     ```sql
-<<<<<<< Updated upstream
-   CREATE TABLE IF NOT EXISTS vehicle_kilometers (
-    plate VARCHAR(8) NOT NULL PRIMARY KEY,
-    kilometers DOUBLE NOT NULL DEFAULT 0
-   );
-=======
     CREATE TABLE IF NOT EXISTS vehicle_kilometers (
     plate VARCHAR(8) NOT NULL PRIMARY KEY,
     kilometers DOUBLE NOT NULL DEFAULT 0
     );
->>>>>>> Stashed changes
    ```
 
 6. **Enjoy!**

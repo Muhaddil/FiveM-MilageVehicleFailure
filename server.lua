@@ -24,7 +24,7 @@ if Config.DebugMode then
         if xPlayer and xPlayer.getGroup() == 'admin' then
             TriggerClientEvent('realistic-vehicle:triggerTestBreakdown', source)
         else
-            print(('realistic-vehicle: %s intentó usar /testbreakdown sin permisos'):format(GetPlayerIdentifiers(source)[1]))
+            print(('%s intentó usar /testbreakdown sin permisos'):format(GetPlayerIdentifiers(source)[1]))
         end
     end)
 end
@@ -52,3 +52,14 @@ AddEventHandler('vehicle:damageStatus', function()
         args = { 'Sistema de Daño', 'El motor ha recibido ' .. engineDamage .. ' puntos de daño.' }
     })
 end)
+
+-- RegisterNetEvent('realistic-vehicle:registerStash', function()    
+--     local incautaciones = exports.ox_inventory:CreateTemporaryStash({
+--         label = "Incautaciones",
+--         slots = 50,  
+--         maxWeight = 5000000,  
+--         groups = { ['police'] = 0 },  
+--     })
+
+--     TriggerClientEvent('realistic-vehicle:openStash', source, 'Evidencias', incautaciones)
+-- end)
