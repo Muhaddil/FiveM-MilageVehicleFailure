@@ -2,7 +2,7 @@
 
 ## Overview
 
-The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to your FiveM server. This script introduces random vehicle malfunctions based on the number of kilometers driven. The malfunctions include engine failures, tire bursts, and power loss. It also features a debug mode for easier testing and adjustment.
+The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to your FiveM server. This script introduces random vehicle malfunctions based on the number of kilometers driven. The malfunctions include engine failures, tire bursts, power loss and more! It also features a debug mode for easier testing and adjustment.
 
 ## Features
 
