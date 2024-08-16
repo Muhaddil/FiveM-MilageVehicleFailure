@@ -1,7 +1,7 @@
 Config = {}
 
 -- Debugging mode
-Config.DebugMode = false
+Config.DebugMode = true
 Config.ShowNotifications = true
 
 -- Optimal configuration for debugging
@@ -29,19 +29,19 @@ Config.BreakdownTypes = {
         duration = 30000,
         action = function(vehicle)
             SetVehicleEngineOn(vehicle, false, true, true)
-            SetVehicleEngineHealth(vehicle, 0.0)
-            TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, true)
+            SetVehicleEngineHealth(vehicle, -4000)
+            -- TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El motor de tu vehículo se ha calentado!")
+                ESX.ShowNotification("¡El motor de tu vehículo se ha calentado y ha roto la culata!")
             end
-            Citizen.SetTimeout(Config.BreakdownTypes[1].duration, function()
-                SetVehicleEngineHealth(vehicle, 1000.0)
-                SetVehicleEngineOn(vehicle, true, true, true)
-                if Config.ShowNotifications then
-                    ESX.ShowNotification("El motor de tu vehículo se ha enfriado.")
-                end
-                TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, false)
-            end)
+            -- Citizen.SetTimeout(Config.BreakdownTypes[1].duration, function()
+            --     SetVehicleEngineHealth(vehicle, 1000.0)
+            --     SetVehicleEngineOn(vehicle, true, true, true)
+            --     if Config.ShowNotifications then
+            --         ESX.ShowNotification("El motor de tu vehículo se ha enfriado.")
+            --     end
+            --     TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, false)
+            -- end)
         end
     },
     {
@@ -88,14 +88,26 @@ Config.BreakdownTypes = {
     },
     {
         name = "PetrolLoss",
-        chance = 0.4,
+        chance = 1.6,
+        duration = 25000,
         action = function(vehicle)
+            -- SetVehicleFuelLevel(vehicle, currentFuelLevel - 10.0)
+            SetVehicleEngineOn(vehicle, false, false, false)
             TriggerEvent('realistic-vehicle:petrolLossFlag', vehicle, true)
             if Config.ShowNotifications then
                 ESX.ShowNotification("¡Tu vehículo tiene una fuga de gasolina!")
             end
+            Citizen.SetTimeout(Config.BreakdownTypes[4].duration, function()
+                local currentFuelLevel = GetVehicleFuelLevel(vehicle)
+                SetVehicleFuelLevel(vehicle, currentFuelLevel)
+                SetVehicleEngineOn(vehicle, true, true, true)
+                TriggerEvent('realistic-vehicle:petrolLossFlag', vehicle, false)
+                if Config.ShowNotifications then
+                    ESX.ShowNotification("La fuga de gasolina ha sido sellada.")
+                end
+            end)
         end
-    },
+    },  
     {
         name = "TransmissionFailure",
         chance = 0.3,

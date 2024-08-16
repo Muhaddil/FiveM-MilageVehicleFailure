@@ -12,8 +12,7 @@ local alternatorFailureFlags = {}
 local transmissionFluidLeakFlags = {}
 local clutchFailureFlags = {}
 local fuelFilterCloggedFlags = {}
-local vehicleBatteryHealth = {}
-local vehicleTransmissionHealth = {}
+local petrolLossFlag = {}
 
 
 function DebugPrint(...)
@@ -136,17 +135,23 @@ end)
 
 RegisterNetEvent('realistic-vehicle:breakdown')
 AddEventHandler('realistic-vehicle:breakdown', function(vehicle)
-    local rand = math.random()
-    local cumulativeChance = 0
+    local totalWeight = 0
+    for _, breakdown in ipairs(Config.BreakdownTypes) do
+        totalWeight = totalWeight + breakdown.chance
+    end
+
+    local rand = math.random() * totalWeight
+    local cumulativeWeight = 0
 
     for _, breakdown in ipairs(Config.BreakdownTypes) do
-        cumulativeChance = cumulativeChance + breakdown.chance
-        if rand <= cumulativeChance then
+        cumulativeWeight = cumulativeWeight + breakdown.chance
+        if rand <= cumulativeWeight then
             breakdown.action(vehicle)
             break
         end
     end
 end)
+
 
 if Config.DebugMode then
     RegisterCommand('testbreakdown', function()
@@ -161,12 +166,17 @@ AddEventHandler('realistic-vehicle:triggerTestBreakdown', function()
     local vehicle = GetVehiclePedIsIn(playerPed, false)
 
     if vehicle ~= 0 then
-        local rand = math.random()
-        local cumulativeChance = 0
-
+        local totalWeight = 0
         for _, breakdown in ipairs(Config.BreakdownTypes) do
-            cumulativeChance = cumulativeChance + breakdown.chance
-            if rand <= cumulativeChance then
+            totalWeight = totalWeight + breakdown.chance
+        end
+    
+        local rand = math.random() * totalWeight
+        local cumulativeWeight = 0
+    
+        for _, breakdown in ipairs(Config.BreakdownTypes) do
+            cumulativeWeight = cumulativeWeight + breakdown.chance
+            if rand <= cumulativeWeight then
                 breakdown.action(vehicle)
                 break
             end
@@ -177,33 +187,35 @@ AddEventHandler('realistic-vehicle:triggerTestBreakdown', function()
 end)
 
 -- Function to avoid possible incompatibilities with other scripts that modify the health of the engine
-RegisterNetEvent('realistic-vehicle:engineFailureFlag')
-AddEventHandler('realistic-vehicle:engineFailureFlag', function(vehicle, isFailing)
-    engineFailureFlags[vehicle] = isFailing
-    if not isFailing then
-        engineRestored[vehicle] = true
-    end
-end)
+-- Unused at the moment
 
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(1000)
-        for vehicle, isFailing in pairs(engineFailureFlags) do
-            if isFailing then
-                local currentHealth = GetVehicleEngineHealth(vehicle)
-                if currentHealth > 0.0 then
-                    SetVehicleEngineHealth(vehicle, 0.0)
-                end
-            elseif not engineRestored[vehicle] then
-                local currentHealth = GetVehicleEngineHealth(vehicle)
-                if currentHealth < 1000.0 then
-                    SetVehicleEngineHealth(vehicle, 1000.0)
-                end
-                engineRestored[vehicle] = true
-            end
-        end
-    end
-end)
+-- RegisterNetEvent('realistic-vehicle:engineFailureFlag')
+-- AddEventHandler('realistic-vehicle:engineFailureFlag', function(vehicle, isFailing)
+--     engineFailureFlags[vehicle] = isFailing
+--     if not isFailing then
+--         engineRestored[vehicle] = true
+--     end
+-- end)
+
+-- Citizen.CreateThread(function()
+--     while true do
+--         Citizen.Wait(1000)
+--         for vehicle, isFailing in pairs(engineFailureFlags) do
+--             if isFailing then
+--                 local currentHealth = GetVehicleEngineHealth(vehicle)
+--                 if currentHealth > 0.0 then
+--                     SetVehicleEngineHealth(vehicle, 0.0)
+--                 end
+--             elseif not engineRestored[vehicle] then
+--                 local currentHealth = GetVehicleEngineHealth(vehicle)
+--                 if currentHealth < 1000.0 then
+--                     SetVehicleEngineHealth(vehicle, 1000.0)
+--                 end
+--                 engineRestored[vehicle] = true
+--             end
+--         end
+--     end
+-- end)
 
 local damageMultiplier = Config.damageMultiplier
 local checkInterval2 = Config.CheckIntervalEngineDamage
@@ -303,18 +315,23 @@ if Config.preventVehicleFlip then
     Citizen.CreateThread(function()
         while true do
             local waitTime = 500
-            
+
             local playerPed = PlayerPedId()
             local vehicle = GetVehiclePedIsIn(playerPed, false)
-            
+
             if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == playerPed then
                 local roll = GetEntityRoll(vehicle)
+
                 if (roll > 75.0 or roll < -75.0) and GetEntitySpeed(vehicle) < 2 then
                     DisableControlAction(2, 59, true)
                     DisableControlAction(2, 60, true)
-                    waitTime = 10
+                    waitTime = 10 
+                -- else
+                --     EnableControlAction(2, 59, true)
+                --     EnableControlAction(2, 60, true)
                 end
             end
+
             Citizen.Wait(waitTime)
         end
     end)
@@ -348,6 +365,11 @@ end)
 RegisterNetEvent('realistic-vehicle:radiatorLeakFlag')
 AddEventHandler('realistic-vehicle:radiatorLeakFlag', function(vehicle, hasLeak)
     radiatorLeakFlags[vehicle] = hasLeak
+end)
+
+RegisterNetEvent('realistic-vehicle:petrolLossFlag')
+AddEventHandler('realistic-vehicle:petrolLossFlag', function(vehicle, hasPetrolLeak)
+    petrolLossFlag[vehicle] = hasPetrolLeak
 end)
 
 RegisterNetEvent('realistic-vehicle:brakeFailureFlag')
@@ -385,11 +407,13 @@ Citizen.CreateThread(function()
         local waitTime = 5000
         local playerPed = PlayerPedId()
         local vehicle = GetVehiclePedIsIn(playerPed, false)
+
         if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == playerPed then
-            waitTime = 100
+            local hasActiveFlag = false
 
             -- for vehicle, isDraining in pairs(batteryDrainFlags) do
             --     if isDraining then
+            --         hasActiveFlag = true
             --         local currentBattery = GetVehicleBatteryHealth(vehicle)
             --         if currentBattery > 0.0 then
             --             SetVehicleBatteryHealth(vehicle, currentBattery - 0.1)
@@ -399,8 +423,9 @@ Citizen.CreateThread(function()
 
             for vehicle, hasLeak in pairs(radiatorLeakFlags) do
                 if hasLeak then
+                    hasActiveFlag = true
                     local currentTemp = GetVehicleEngineTemperature(vehicle)
-                    if currentTemp < 1000.0 then
+                    if (currentTemp < 1000.0) then
                         SetVehicleEngineTemperature(vehicle, currentTemp + 5.0)
                     end
                 end
@@ -408,6 +433,24 @@ Citizen.CreateThread(function()
 
             for vehicle, hasFailure in pairs(brakeFailureFlags) do
                 if hasFailure then
+                    hasActiveFlag = true
+                    SetVehicleBrake(vehicle, true)
+                    SetVehicleHandbrake(vehicle, true)
+                end
+            end
+
+            for vehicle, hasPetrolLeak in pairs(petrolLossFlag) do
+                if hasPetrolLeak then
+                    hasActiveFlag = true
+                    local currentFuelLevel = GetVehicleFuelLevel(vehicle)
+                    SetVehicleFuelLevel(vehicle, currentFuelLevel - 0.23)
+                    SetVehicleEngineOn(vehicle, false, false, false)
+                end
+            end
+
+            for vehicle, hasFailure in pairs(brakeFailureFlags) do
+                if hasFailure then
+                    hasActiveFlag = true
                     SetVehicleBrake(vehicle, true)
                     SetVehicleHandbrake(vehicle, true)
                 end
@@ -415,12 +458,14 @@ Citizen.CreateThread(function()
 
             for vehicle, isDamaged in pairs(suspensionDamageFlags) do
                 if isDamaged then
+                    hasActiveFlag = true
                     SetVehicleSuspensionHeight(vehicle, 0.05)
                 end
             end
 
             for vehicle, hasFailure in pairs(alternatorFailureFlags) do
                 if hasFailure then
+                    hasActiveFlag = true
                     SetVehicleEngineOn(vehicle, false, true, false)
                     SetVehicleLights(vehicle, 1)            
                 end
@@ -428,24 +473,31 @@ Citizen.CreateThread(function()
 
             for vehicle, hasLeak in pairs(transmissionFluidLeakFlags) do
                 if hasLeak then
+                    hasActiveFlag = true
                     SetVehicleEnginePowerMultiplier(vehicle, -50.0)
                 end
             end
 
             for vehicle, hasFailure in pairs(clutchFailureFlags) do
                 if hasFailure then
+                    hasActiveFlag = true
                     SetVehicleClutch(vehicle, 0.2)
                 end
             end
 
             for vehicle, isClogged in pairs(fuelFilterCloggedFlags) do
-                DebugPrint(isClogged)
                 if isClogged then
+                    hasActiveFlag = true
                     SetVehicleFuelLevel(vehicle, 9.77)
-                    DebugPrint('Obstruido')
                 end
             end
+
+            if hasActiveFlag then
+                waitTime = 100
+                DebugPrint('Has an Active Flag')
+            end
         end
+
         Citizen.Wait(waitTime)
     end
 end)
