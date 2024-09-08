@@ -5,17 +5,17 @@ Config.DebugMode = true
 Config.ShowNotifications = true
 
 -- Optimal configuration for debugging
--- Config.CheckInterval = 1000 
--- Config.BaseBreakdownChance = 0.1 
+-- Config.CheckInterval = 1000
+-- Config.BaseBreakdownChance = 0.1
 -- Config.MaxBreakdownChance = 1.0
 
-Config.CheckInterval = 10000 -- Cooldown in milliseconds
-Config.BaseBreakdownChance = 0.01 --Base failure probability per 1000 km
-Config.MaxBreakdownChance = 0.5 -- Maximum probability of failure
-Config.BreakdownCooldown = 10800000  -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
-Config.SpeedToDamageRatio = 1.0 -- Does nothing | Useless
-Config.preventVehicleFlip = true -- Disable flipping overturned cars
-Config.damageMultiplier = 0.5 -- Damage multiplier applied to the engine in each crash
+Config.CheckInterval = 10000            -- Cooldown in milliseconds
+Config.BaseBreakdownChance = 0.01       --Base failure probability per 1000 km
+Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
+Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
+Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
+Config.preventVehicleFlip = true        -- Disable flipping overturned cars
+Config.damageMultiplier = 0.5           -- Damage multiplier applied to the engine in each crash
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 
 -- Setting to use external mileage system
@@ -52,12 +52,12 @@ Config.BreakdownTypes = {
             local numWheels = GetVehicleNumberOfWheels(vehicle)
             local affectedTire
             if numWheels == 2 then
-                affectedTire = (math.random(2)-1)*4
+                affectedTire = (math.random(2) - 1) * 4
             elseif numWheels == 4 then
-                affectedTire = (math.random(4)-1)
+                affectedTire = (math.random(4) - 1)
                 if affectedTire > 1 then affectedTire = affectedTire + 2 end
             elseif numWheels == 6 then
-                affectedTire = (math.random(6)-1)
+                affectedTire = (math.random(6) - 1)
             else
                 affectedTire = 0
             end
@@ -107,7 +107,7 @@ Config.BreakdownTypes = {
                 end
             end)
         end
-    },  
+    },
     {
         name = "TransmissionFailure",
         chance = 0.3,
@@ -225,7 +225,7 @@ Config.BreakdownTypes = {
                     ESX.ShowNotification("El alternador de tu vehículo ha sido reparado.")
                 end
                 SetVehicleEngineOn(vehicle, true, true, true)
-                SetVehicleLights(vehicle, 0)    
+                SetVehicleLights(vehicle, 0)
             end)
         end
     },
@@ -290,7 +290,7 @@ Config.BreakdownTypes = {
 }
 
 Config.ExcludedVehicles = {
-    "ADMINCAR", 
+    "ADMINCAR",
 }
 
 Config.ExcludedPrefixes = {
@@ -298,4 +298,3 @@ Config.ExcludedPrefixes = {
     "LSSD",
     "AMB",
 }
-

@@ -10,17 +10,19 @@ end)
 
 RegisterServerEvent('realistic-vehicle:updateKilometers')
 AddEventHandler('realistic-vehicle:updateKilometers', function(plate, kilometers)
-    MySQL.Async.execute('INSERT INTO vehicle_kilometers (plate, kilometers) VALUES (@plate, @kilometers) ON DUPLICATE KEY UPDATE kilometers = @kilometers', {
-        ['@plate'] = plate,
-        ['@kilometers'] = kilometers
-    })
+    MySQL.Async.execute(
+    'INSERT INTO vehicle_kilometers (plate, kilometers) VALUES (@plate, @kilometers) ON DUPLICATE KEY UPDATE kilometers = @kilometers',
+        {
+            ['@plate'] = plate,
+            ['@kilometers'] = kilometers
+        })
 end)
 
 if Config.DebugMode then
     RegisterServerEvent('realistic-vehicle:testBreakdown')
     AddEventHandler('realistic-vehicle:testBreakdown', function()
         local xPlayer = ESX.GetPlayerFromId(source)
-        
+
         if xPlayer and xPlayer.getGroup() == 'admin' then
             TriggerClientEvent('realistic-vehicle:triggerTestBreakdown', source)
         else
@@ -53,12 +55,12 @@ AddEventHandler('vehicle:damageStatus', function()
     })
 end)
 
--- RegisterNetEvent('realistic-vehicle:registerStash', function()    
+-- RegisterNetEvent('realistic-vehicle:registerStash', function()
 --     local incautaciones = exports.ox_inventory:CreateTemporaryStash({
 --         label = "Incautaciones",
---         slots = 50,  
---         maxWeight = 5000000,  
---         groups = { ['police'] = 0 },  
+--         slots = 50,
+--         maxWeight = 5000000,
+--         groups = { ['police'] = 0 },
 --     })
 
 --     TriggerClientEvent('realistic-vehicle:openStash', source, 'Evidencias', incautaciones)

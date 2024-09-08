@@ -2,8 +2,8 @@ ESX = exports['es_extended']:getSharedObject()
 
 local vehicleKilometers = {}
 local vehicleCooldown = {}
-local engineFailureFlags = {}
-local engineRestored = {}
+-- local engineFailureFlags = {}
+-- local engineRestored = {}
 local batteryDrainFlags = {}
 local radiatorLeakFlags = {}
 local brakeFailureFlags = {}
@@ -170,10 +170,10 @@ AddEventHandler('realistic-vehicle:triggerTestBreakdown', function()
         for _, breakdown in ipairs(Config.BreakdownTypes) do
             totalWeight = totalWeight + breakdown.chance
         end
-    
+
         local rand = math.random() * totalWeight
         local cumulativeWeight = 0
-    
+
         for _, breakdown in ipairs(Config.BreakdownTypes) do
             cumulativeWeight = cumulativeWeight + breakdown.chance
             if rand <= cumulativeWeight then
@@ -226,10 +226,10 @@ function ApplyEngineDamage(vehicle, damageAmount)
         local engineHealth = GetVehicleEngineHealth(vehicle)
         DebugPrint('Salud del motor antes del daño: ' .. engineHealth)
         DebugPrint('Cantidad de daño: ' .. damageAmount)
-        
+
         if engineHealth ~= engineHealth then
             DebugPrint("Error: engineHealth es NaN")
-            return 
+            return
         end
 
         local newEngineHealth = engineHealth - damageAmount
@@ -245,7 +245,7 @@ function ApplyEngineDamage(vehicle, damageAmount)
         end
 
         SetVehicleEngineHealth(vehicle, newEngineHealth)
-        
+
         if newEngineHealth <= -4000 then
             SetVehicleEngineOn(vehicle, false, true)
             SetVehicleUndriveable(vehicle, true)
@@ -258,21 +258,21 @@ function ApplyEngineDamage(vehicle, damageAmount)
 end
 
 Citizen.CreateThread(function()
-    while true do        
+    while true do
         local playerPed = PlayerPedId()
         local vehicle = GetVehiclePedIsIn(playerPed, false)
-        
+
         if DoesEntityExist(vehicle) and IsPedInAnyVehicle(playerPed, false) then
             checkInterval2 = 200
             local currentSpeed = GetEntitySpeed(vehicle) * 3.6
             local speedDifference = previousSpeed - currentSpeed
-            
+
             if speedDifference > 50 then
                 local damageAmount = speedDifference * damageMultiplier / 2
                 DebugPrint('Daño al motor: ' .. damageAmount)
                 ApplyEngineDamage(vehicle, damageAmount)
             end
-            
+
             previousSpeed = currentSpeed
         end
         Citizen.Wait(checkInterval2)
@@ -288,7 +288,7 @@ end)
 --         local playerCoords = GetEntityCoords(PlayerPedId())
 --         local distance = #(playerCoords - Coords)
 
---         if distance < 3.0 then 
+--         if distance < 3.0 then
 --             if not isTextVisible then
 --                 lib.showTextUI('Pulsa E para abrir')
 --                 isTextVisible = true
@@ -297,11 +297,11 @@ end)
 --             if IsControlPressed(0, 38) then
 --                 TriggerServerEvent('realistic-vehicle:registerStash')
 --                 lib.hideTextUI()
---                 isTextVisible = false  
+--                 isTextVisible = false
 --             end
 --         elseif isTextVisible then
 --             lib.hideTextUI()
---             isTextVisible = false  
+--             isTextVisible = false
 --         end
 --     end
 -- end)
@@ -325,10 +325,10 @@ if Config.preventVehicleFlip then
                 if (roll > 75.0 or roll < -75.0) and GetEntitySpeed(vehicle) < 2 then
                     DisableControlAction(2, 59, true)
                     DisableControlAction(2, 60, true)
-                    waitTime = 10 
-                -- else
-                --     EnableControlAction(2, 59, true)
-                --     EnableControlAction(2, 60, true)
+                    waitTime = 10
+                    -- else
+                    --     EnableControlAction(2, 59, true)
+                    --     EnableControlAction(2, 60, true)
                 end
             end
 
@@ -467,7 +467,7 @@ Citizen.CreateThread(function()
                 if hasFailure then
                     hasActiveFlag = true
                     SetVehicleEngineOn(vehicle, false, true, false)
-                    SetVehicleLights(vehicle, 1)            
+                    SetVehicleLights(vehicle, 1)
                 end
             end
 
