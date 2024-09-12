@@ -12,15 +12,15 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 
 - **Power Loss**: Significantly reduces the engine power of the vehicle for 20 seconds. After that, the power is restored to its normal level.
 
-- **Petrol Loss**: Causes a fuel leak in the vehicle. The player is notified of the gasoline loss.
+- **Petrol Loss**: Causes a fuel leak in the vehicle, reducing the fuel level and potentially turning off the engine if it runs too low. The player is notified of the gasoline loss.
 
 - **Transmission Failure**: Temporarily disables the transmission by turning off the engine and reducing engine health. After 25 seconds, the transmission is repaired, and the engine is turned back on.
 
-- **Battery Drain**: Drains the vehicle's battery completely, turning off the engine. After 60 seconds, the battery recharges and the engine restarts.
+- **Battery Drain**: Drains the vehicle's battery completely, turning off the engine. After 60 seconds, the battery recharges and the engine restarts. A flag can be activated or deactivated for this failure.
 
 - **Radiator Leak**: Increases the engine temperature by 50 degrees due to a radiator leak. After 30 seconds, the leak is sealed, and the temperature returns to normal.
 
-- **Brake Failure**: Activates the vehicle's brakes and handbrake, simulating brake failure. After 20 seconds, the brakes are repaired.
+- **Brake Failure**: Activates the vehicle's brakes and handbrake, simulating brake failure. The vehicle becomes immobile until the brakes are repaired after 20 seconds.
 
 - **Suspension Damage**: Lowers the suspension height of the vehicle due to damage. After 30 seconds, the suspension is repaired, and the height returns to normal.
 
@@ -31,6 +31,8 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 - **Clutch Failure**: Temporarily lowers the clutch's efficiency, affecting gear shifting. After 20 seconds, the clutch is repaired.
 
 - **Fuel Filter Clogged**: Decreases the vehicle's fuel level by 50 units due to a clogged fuel filter. After 20 seconds, the filter is cleaned, and fuel level is restored.
+
+- **Door Fall Off Failure**: Randomly causes one of the vehicle's doors to fall off. The player is notified when a door falls off. 
 
 ## Requirements
 

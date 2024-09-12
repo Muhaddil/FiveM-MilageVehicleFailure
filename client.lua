@@ -402,6 +402,11 @@ AddEventHandler('realistic-vehicle:fuelFilterCloggedFlag', function(vehicle, isC
     fuelFilterCloggedFlags[vehicle] = isClogged
 end)
 
+RegisterNetEvent('realistic-vehicle:hoodLatchFailureFlag')
+AddEventHandler('realistic-vehicle:hoodLatchFailureFlag', function(vehicle, hasFailure)
+    hoodLatchFailureFlags[vehicle] = hasFailure
+end)
+
 Citizen.CreateThread(function()
     while true do
         local waitTime = 5000
@@ -495,6 +500,13 @@ Citizen.CreateThread(function()
             if hasActiveFlag then
                 waitTime = 100
                 DebugPrint('Has an Active Flag')
+            end
+        end
+
+        for vehicle, hasFailure in pairs(hoodLatchFailureFlags) do
+            if hasFailure then
+                hasActiveFlag = true
+                SetVehicleDoorOpen(vehicle, 4, false, false)
             end
         end
 

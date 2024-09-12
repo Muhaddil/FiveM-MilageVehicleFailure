@@ -272,7 +272,7 @@ Config.BreakdownTypes = {
         chance = 0.4,
         duration = 20000,
         action = function(vehicle)
-            print(GetVehicleFuelLevel(vehicle))
+            DebugPrint(GetVehicleFuelLevel(vehicle))
             SetVehicleFuelLevel(vehicle, 9.77)
             TriggerEvent('realistic-vehicle:fuelFilterCloggedFlag', vehicle, true)
             if Config.ShowNotifications then
@@ -287,7 +287,52 @@ Config.BreakdownTypes = {
             end)
         end
     },
+    {
+        name = "HoodLatchFailure",
+        chance = 0.5,
+        duration = 20000,
+        action = function(vehicle)
+            SetVehicleDoorOpen(vehicle, 4, false, false)
+
+            --For Other Scripts Incompatibility
+            -- TriggerEvent('realistic-vehicle:hoodLatchFailureFlag', vehicle, true)
+    
+            if Config.ShowNotifications then
+                ESX.ShowNotification("¡El capó de tu vehículo se ha abierto debido a un fallo en los seguros!")
+            end
+    
+            -- To set if the hood closes on its own when a timeout finishes
+            -- Citizen.SetTimeout(Config.BreakdownTypes[14].duration, function()
+            --     SetVehicleDoorShut(vehicle, 4, false)
+            --     TriggerEvent('realistic-vehicle:hoodLatchFailureFlag', vehicle, false)
+            --     if Config.ShowNotifications then
+            --         ESX.ShowNotification("El capó de tu vehículo ha sido cerrado.")
+            --     end
+            -- end)
+        end
+    },
+    {
+        name = "DoorFallOffFailure",
+        chance = 0.2,
+        duration = 0,
+        action = function(vehicle)
+            local doorIndex = math.random(0, 5)
+    
+            if DoesVehicleHaveDoor(vehicle, doorIndex) then
+                SetVehicleDoorBroken(vehicle, doorIndex, false)
+            else
+                DebugPrint('¡Esa puerta no existe!')
+            end
+    
+            if Config.ShowNotifications then
+                ESX.ShowNotification("¡Una de las puertas de tu vehículo se ha soltado y se ha caído!")
+            end
+        end
+    }
+    
 }
+
+-- This vehicles will be excluded from the mileage probability of breakdowns
 
 Config.ExcludedVehicles = {
     "ADMINCAR",
