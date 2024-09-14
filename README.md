@@ -6,7 +6,7 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 
 ## Features
 
-- **Motor Failure**: Completely disables the vehicle's engine by turning it off and reducing engine health to zero. After 30 seconds, the engine cools down and returns to normal.
+- **Motor Failure**: Completely disables the vehicle's engine by turning it off and reducing engine health to zero. (This is disabled by default) After 30 seconds, the engine cools down and returns to normal.
   
 - **Tire Burst**: Randomly causes one of the vehicle's tires to burst, if the tires can burst. The player is notified when a tire has burst.
 

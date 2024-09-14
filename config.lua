@@ -28,6 +28,7 @@ Config.BreakdownTypes = {
         chance = 0.2,
         duration = 30000,
         action = function(vehicle)
+            -- local currentHealth = GetVehicleEngineHealth(vehicle)
             SetVehicleEngineOn(vehicle, false, true, true)
             SetVehicleEngineHealth(vehicle, -4000)
             -- TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, true)
@@ -35,7 +36,7 @@ Config.BreakdownTypes = {
                 ESX.ShowNotification("¡El motor de tu vehículo se ha calentado y ha roto la culata!")
             end
             -- Citizen.SetTimeout(Config.BreakdownTypes[1].duration, function()
-            --     SetVehicleEngineHealth(vehicle, 1000.0)
+            --     SetVehicleEngineHealth(vehicle, currentHealth)
             --     SetVehicleEngineOn(vehicle, true, true, true)
             --     if Config.ShowNotifications then
             --         ESX.ShowNotification("El motor de tu vehículo se ha enfriado.")
