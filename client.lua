@@ -179,14 +179,14 @@ if Config.DebugMode then
     end, false)
 
     RegisterCommand('SetVehicleEngineHealth', function(source, args)
-        local playerPed = GetPlayerPed(-1) -- Obtener el personaje del jugador
-        local vehicle = GetVehiclePedIsIn(playerPed, false) -- Obtener el vehículo en el que está el jugador
+        local playerPed = GetPlayerPed(-1)
+        local vehicle = GetVehiclePedIsIn(playerPed, false)
     
         if vehicle ~= 0 then
-            local engineHealth = tonumber(args[1]) -- Obtener el valor de salud del motor del argumento
+            local engineHealth = tonumber(args[1])
     
             if engineHealth then
-                SetVehicleEngineHealth(vehicle, engineHealth) -- Establecer la salud del motor
+                SetVehicleEngineHealth(vehicle, engineHealth)
                 DebugPrint('Usado comando "SetVehicleEngineHealth" con valor: ' .. engineHealth)
             else
                 DebugPrint('Valor de salud del motor no válido.')
