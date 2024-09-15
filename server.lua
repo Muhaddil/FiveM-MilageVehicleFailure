@@ -11,7 +11,7 @@ end)
 RegisterServerEvent('realistic-vehicle:updateKilometers')
 AddEventHandler('realistic-vehicle:updateKilometers', function(plate, kilometers)
     MySQL.Async.execute(
-    'INSERT INTO vehicle_kilometers (plate, kilometers) VALUES (@plate, @kilometers) ON DUPLICATE KEY UPDATE kilometers = @kilometers',
+        'INSERT INTO vehicle_kilometers (plate, kilometers) VALUES (@plate, @kilometers) ON DUPLICATE KEY UPDATE kilometers = @kilometers',
         {
             ['@plate'] = plate,
             ['@kilometers'] = kilometers

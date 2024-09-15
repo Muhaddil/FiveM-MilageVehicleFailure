@@ -4,7 +4,7 @@ lua54 'yes'
 
 author 'Muhaddil'
 description 'Mileage-based vehicle breakdown system for ESX'
-version '0.4.1'
+version '0.5.0'
 
 shared_script 'config.lua'
 client_script 'client.lua'

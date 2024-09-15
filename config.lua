@@ -15,11 +15,18 @@ Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
 Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
 Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
 Config.preventVehicleFlip = true        -- Disable flipping overturned cars
-Config.damageMultiplier = 0.5           -- Damage multiplier applied to the engine in each crash
+Config.damageMultiplier = 3             -- Damage multiplier applied to the engine in each crash
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 
 -- Setting to use external mileage system
 Config.UseExternalMileageSystem = true
+
+-- Config for the vehicle physics in harsh terrains
+
+Config.MaxSpeed = 25            -- In KM/hours
+Config.CarPhysicsTimeout = 1500 -- In milliseconds
+Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
+Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
 
 -- Types of breakdowns
 Config.BreakdownTypes = {
@@ -297,11 +304,11 @@ Config.BreakdownTypes = {
 
             --For Other Scripts Incompatibility
             -- TriggerEvent('realistic-vehicle:hoodLatchFailureFlag', vehicle, true)
-    
+
             if Config.ShowNotifications then
                 ESX.ShowNotification("¡El capó de tu vehículo se ha abierto debido a un fallo en los seguros!")
             end
-    
+
             -- To set if the hood closes on its own when a timeout finishes
             -- Citizen.SetTimeout(Config.BreakdownTypes[14].duration, function()
             --     SetVehicleDoorShut(vehicle, 4, false)
@@ -318,19 +325,19 @@ Config.BreakdownTypes = {
         duration = 0,
         action = function(vehicle)
             local doorIndex = math.random(0, 5)
-    
+
             if DoesVehicleHaveDoor(vehicle, doorIndex) then
                 SetVehicleDoorBroken(vehicle, doorIndex, false)
             else
                 DebugPrint('¡Esa puerta no existe!')
             end
-    
+
             if Config.ShowNotifications then
                 ESX.ShowNotification("¡Una de las puertas de tu vehículo se ha soltado y se ha caído!")
             end
         end
-    }
-    
+    },
+
 }
 
 -- This vehicles will be excluded from the mileage probability of breakdowns
