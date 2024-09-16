@@ -61,11 +61,11 @@ end)
 
 if Config.AutoRunSQL then
     if not pcall(function()
-      local fileName = "ESX.sql" 
+      local fileName = "ESX.sql"
       local file = assert(io.open(GetResourcePath(GetCurrentResourceName()) .. "/" .. fileName, "rb"))
       local sql = file:read("*all")
       file:close()
-  
+
       MySQL.query.await(sql)
     end) then
       print("^1[SQL ERROR] There was an error while automatically running the required SQL. Don't worry, you just need to run the SQL file. If you've already ran the SQL code previously, and this error is annoying you, set Config.AutoRunSQL = false^0")
@@ -81,19 +81,18 @@ if Config.AutoVersionChecker then
                 local latestVersion = data.tag_name
 
                 if latestVersion ~= currentVersion then
-                    print('[FiveM-MilageVehicleFailure] Una nueva versión está disponible: ' .. latestVersion)
-                    print('[FiveM-MilageVehicleFailure] Tu versión: ' .. currentVersion)
-                    print('[FiveM-MilageVehicleFailure] Descarga la última versión aquí: ' .. data.html_url)
+                    print('[FiveM-MilageVehicleFailure] A new version is available: ' .. latestVersion)
+                    print('[FiveM-MilageVehicleFailure] Your version: ' .. currentVersion)
+                    print('[FiveM-MilageVehicleFailure] Download the latest version here: ' .. data.html_url)
                 else
-                    print('[FiveM-MilageVehicleFailure] Estás usando la última versión: ' .. currentVersion)
+                    print('[FiveM-MilageVehicleFailure] You are using the latest version: ' .. currentVersion)
                 end
             else
-                -- Si no se encuentra "tag_name", imprime la respuesta para depurar
-                print('[FiveM-MilageVehicleFailure] Error: La estructura del JSON no es la esperada.')
-                print('[FiveM-MilageVehicleFailure] Respuesta de la API de GitHub: ' .. response)
+                print('[FiveM-MilageVehicleFailure] Error: The JSON structure is not as expected.')
+                print('[FiveM-MilageVehicleFailure] GitHub API Response: ' .. response)
             end
         else
-            print('[FiveM-MilageVehicleFailure] No se pudo comprobar la versión más reciente. Código de estado: ' ..
+            print('[FiveM-MilageVehicleFailure] Failed to check for latest version. Status code: ' ..
             statusCode)
         end
     end, 'GET')
