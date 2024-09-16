@@ -18,7 +18,7 @@ Config.preventVehicleFlip = true        -- Disable flipping overturned cars
 Config.damageMultiplier = 3             -- Damage multiplier applied to the engine in each crash
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 
--- Setting to use external mileage system
+-- Setting to use external mileage system (cd_garage mileage system)
 Config.UseExternalMileageSystem = true
 
 -- Config for the vehicle physics in harsh terrains
