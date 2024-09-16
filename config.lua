@@ -17,8 +17,10 @@ Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
 Config.preventVehicleFlip = true        -- Disable flipping overturned cars
 Config.damageMultiplier = 3             -- Damage multiplier applied to the engine in each crash
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
+Config.AutoRunSQL = true
+Config.AutoVersionChecker = true
 
--- Setting to use external mileage system (cd_garage mileage system)
+-- Setting to use external mileage system (config your own external system if you have one in server.lua line 34)
 Config.UseExternalMileageSystem = false
 
 -- Config for the vehicle physics in harsh terrains
