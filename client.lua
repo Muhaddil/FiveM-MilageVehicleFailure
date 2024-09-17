@@ -1,5 +1,3 @@
-ESX = exports['es_extended']:getSharedObject()
-
 local vehicleKilometers = {}
 local vehicleCooldown = {}
 -- local engineFailureFlags = {}
@@ -31,6 +29,34 @@ function DebugPrint(...)
     end
 end
 
+if Config.FrameWork == "esx" then
+    ESX = exports['es_extended']:getSharedObject()
+    elseif Config.FrameWork == "qb" then
+    QBCore = exports['qb-core']:GetCoreObject()
+end
+
+function SendNotification(msgtitle, msg, time, type)
+    if Config.UseOXNotifications then
+        lib.notify({
+            title = msgtitle,
+            description = msg,
+            type = type,
+            position = 'center',
+        })
+    else
+        if Config.FrameWork == 'qb' then
+            QBCore.Functions.Notify(msg, type, time)
+        elseif Config.FrameWork == 'esx' then
+            TriggerEvent('esx:showNotification', msg, type, time)
+        end
+    end
+end
+
+RegisterNetEvent("SendNotification")
+AddEventHandler("SendNotification", function(msgtitle, msg, time, type)
+    SendNotification(msgtitle, msg, time, type)
+end)
+
 
 --   oooooooooo.  ooooooooo.   oooooooooooo       .o.       oooo    oooo oooooooooo.     .oooooo.   oooooo   oooooo     oooo ooooo      ooo  .oooooo..o
 --   `888'   `Y8b `888   `Y88. `888'     `8      .888.      `888   .8P'  `888'   `Y8b   d8P'  `Y8b   `888.    `888.     .8'  `888b.     `8' d8P'    `Y8
@@ -49,23 +75,45 @@ end
 local function loadKilometers(plate)
     if Config.UseExternalMileageSystem then
         -- Trigger a server-side event to get the mileage from the database
-        ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
-            if km then
-                DebugPrint(km)
-                vehicleKilometers[plate] = { km = km }
-            else
-                vehicleKilometers[plate] = { km = 0 }
-            end
-        end, plate)
+        if Config.FrameWork == "esx" then
+            ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
+                if km then
+                    DebugPrint(km)
+                    vehicleKilometers[plate] = { km = km }
+                else
+                    vehicleKilometers[plate] = { km = 0 }
+                end
+            end, plate)
+        elseif Config.FrameWork == "qb" then
+            QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
+                if km then
+                    DebugPrint(km)
+                    vehicleKilometers[plate] = { km = km }
+                else
+                    vehicleKilometers[plate] = { km = 0 }
+                end
+            end, plate)
+        end
     else
-        ESX.TriggerServerCallback('realistic-vehicle:fetchKilometers', function(km)
-            if km then
-                DebugPrint(km)
-                vehicleKilometers[plate] = { km = km }
-            else
-                vehicleKilometers[plate] = { km = 0 }
-            end
-        end, plate)
+        if Config.FrameWork == "esx" then
+            ESX.TriggerServerCallback('realistic-vehicle:fetchKilometers', function(km)
+                if km then
+                    DebugPrint(km)
+                    vehicleKilometers[plate] = { km = km }
+                else
+                    vehicleKilometers[plate] = { km = 0 }
+                end
+            end, plate)
+        elseif Config.FrameWork == "qb" then
+            QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometers', function(km)
+                if km then
+                    DebugPrint(km)
+                    vehicleKilometers[plate] = { km = km }
+                else
+                    vehicleKilometers[plate] = { km = 0 }
+                end
+            end, plate)
+        end
     end
 end
 
@@ -112,22 +160,42 @@ Citizen.CreateThread(function()
                 loadKilometers(plate)
             else
                 if Config.UseExternalMileageSystem then
-                    ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
-                        if km then
-                            DebugPrint(km)
-                            vehicleKilometers[plate] = { km = km }
-                            vehicleKilometers[plate].km = km
-                        else
-                            vehicleKilometers[plate] = { km = 0 }
-                        end
-                    end, plate)
+                    if Config.FrameWork == "esx" then
+                        ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
+                            if km then
+                                DebugPrint(km)
+                                vehicleKilometers[plate] = { km = km }
+                            else
+                                vehicleKilometers[plate] = { km = 0 }
+                            end
+                        end, plate)
+                    elseif Config.FrameWork == "qb" then
+                        QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
+                            if km then
+                                DebugPrint(km)
+                                vehicleKilometers[plate] = { km = km }
+                            else
+                                vehicleKilometers[plate] = { km = 0 }
+                            end
+                        end, plate)
+                    end
                     DebugPrint(vehicleKilometers[plate].km)
                 else
                     local oldCoords = vehicleKilometers[plate].coords or currentCoords
                     local distance = calculateDistance(oldCoords, currentCoords) / 1000
 
+                    distance = distance * Config.KilometerMultiplier
+
                     vehicleKilometers[plate].km = vehicleKilometers[plate].km + distance
                     vehicleKilometers[plate].coords = currentCoords
+
+                    if Config.FrameWork == "esx" then
+                        TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
+                    elseif Config.FrameWork == "qb" then
+                        TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
+                    end
+                    DebugPrint('Guardando kilometros en la DataBase')
+                    DebugPrint('KM nuevos: ' .. vehicleKilometers[plate].km)
                 end
 
                 local km = vehicleKilometers[plate].km
@@ -141,14 +209,9 @@ Citizen.CreateThread(function()
                         vehicleCooldown[plate] = currentTime
                     end
                 end
-
-                if not Config.UseExternalMileageSystem then
-                    TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
-                    DebugPrint('Guardando kilometros en la DataBase')
-                end
             end
         end
-        ::continueLoop::
+    ::continueLoop::
     end
 end)
 
@@ -219,7 +282,8 @@ AddEventHandler('realistic-vehicle:triggerTestBreakdown', function()
             end
         end
     else
-        ESX.ShowNotification("No estás en un vehículo.")
+        -- ESX.ShowNotification("No estás en un vehículo.")
+        TriggerEvent('SendNotification', '', "No estás en un vehículo.", 5000, "info")
     end
 end)
 
@@ -578,7 +642,7 @@ function isOnSandOrMountain()
     local veh = GetVehiclePedIsIn(playerPed, false)
     local groundHash = GetGroundHash(veh)
     
-    DebugPrint(groundHash)
+    -- DebugPrint(groundHash)
 
     local sandHashes = {
         1635937914, -1885547121, -1595148316, 510490462, 
@@ -758,9 +822,9 @@ function limitSpeed(vehicle, terrain)
     local maxSpeedMs = maxSpeedKmH / 3.6
     local currentSpeedMs = GetEntitySpeed(vehicle)
 
-    DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
-    DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
-    DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
+    -- DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
+    -- DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
+    -- DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
 
     if terrain == "sand" or terrain == "mountain" then
         if currentSpeedMs > maxSpeedMs then
@@ -771,7 +835,7 @@ function limitSpeed(vehicle, terrain)
                 local newSpeedMs = currentSpeedMs - (speedDifference * reductionFactor)
                 SetVehicleForwardSpeed(vehicle, newSpeedMs)
 
-                DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
+                -- DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
 
                 if currentSpeedMs - newSpeedMs < 1 then
                     SetEntityMaxSpeed(vehicle, maxSpeedMs)
@@ -810,7 +874,7 @@ Citizen.CreateThread(function()
         if veh ~= 0 then
             timeout = 500
             local terrain = isOnSandOrMountain()
-            DebugPrint(terrain)
+            -- DebugPrint(terrain)
             applyTerrainEffects(veh, terrain)
 
             local vehicleClass = GetVehicleClass(veh)

@@ -3,8 +3,8 @@ game 'gta5'
 lua54 'yes'
 
 author 'Muhaddil'
-description 'Mileage-based vehicle breakdown system for ESX'
-version 'v0.5.11-beta'
+description 'Mileage-based vehicle breakdown system for ESX&QBCore'
+version 'v0.6.0-beta'
 
 shared_script 'config.lua'
 client_script 'client.lua'

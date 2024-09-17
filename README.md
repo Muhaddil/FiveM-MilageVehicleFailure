@@ -39,6 +39,7 @@ The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to yo
 ## Requirements
 
 - ESX Framework for FiveM.
+- OR QBCore Framework for FiveM.
 - A SQL database to store vehicle kilometer data.
 
 ## Installation

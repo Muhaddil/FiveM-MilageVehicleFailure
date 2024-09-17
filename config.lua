@@ -10,6 +10,7 @@ Config.ShowNotifications = true
 -- Config.MaxBreakdownChance = 1.0
 
 Config.CheckInterval = 10000            -- Cooldown in milliseconds
+Config.KilometerMultiplier = 1.0        -- Multiplier for vehicle mileage accumulation. Set to 1.0 for normal rate, higher values will increase mileage faster, and lower values will decrease mileage accumulation.
 Config.BaseBreakdownChance = 0.01       --Base failure probability per 1000 km
 Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
 Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
@@ -19,6 +20,8 @@ Config.damageMultiplier = 3             -- Damage multiplier applied to the engi
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 Config.AutoRunSQL = true
 Config.AutoVersionChecker = true
+Config.FrameWork = "esx"                -- Only compatible with esx or qb (for the moment)
+Config.UseOXNotifications = true
 
 -- Setting to use external mileage system (config your own external system if you have one in server.lua line 34)
 Config.UseExternalMileageSystem = false
@@ -42,13 +45,15 @@ Config.BreakdownTypes = {
             SetVehicleEngineHealth(vehicle, -4000)
             -- TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El motor de tu vehículo se ha calentado y ha roto la culata!")
+                TriggerEvent('SendNotification', '', "¡El motor de tu vehículo se ha calentado y ha roto la culata!",
+                    5000, "error")
             end
             -- Citizen.SetTimeout(Config.BreakdownTypes[1].duration, function()
             --     SetVehicleEngineHealth(vehicle, currentHealth)
             --     SetVehicleEngineOn(vehicle, true, true, true)
             --     if Config.ShowNotifications then
-            --         ESX.ShowNotification("El motor de tu vehículo se ha enfriado.")
+            --     TriggerEvent('SendNotification', '', "El motor de tu vehículo se ha enfriado.", 5000, "success")
+
             --     end
             --     TriggerEvent('realistic-vehicle:engineFailureFlag', vehicle, false)
             -- end)
@@ -73,7 +78,7 @@ Config.BreakdownTypes = {
             end
             SetVehicleTyreBurst(vehicle, affectedTire, true, 1000.0)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡Uno de los neumáticos de tu vehículo ha reventado!")
+                TriggerEvent('SendNotification', '', "¡Uno de los neumáticos de tu vehículo ha reventado!", 5000, "error")
             end
         end
     },
@@ -85,13 +90,14 @@ Config.BreakdownTypes = {
             SetVehicleEnginePowerMultiplier(vehicle, -50.0)
             TriggerEvent('realistic-vehicle:powerLossFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡Tu vehículo ha perdido potencia!")
+                TriggerEvent('SendNotification', '', "¡Tu vehículo ha perdido potencia!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[3].duration, function()
                 SetVehicleEnginePowerMultiplier(vehicle, 0.0)
                 TriggerEvent('realistic-vehicle:powerLossFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La potencia de tu vehículo ha sido restaurada.")
+                    TriggerEvent('SendNotification', '', "La potencia de tu vehículo ha sido restaurada.", 5000,
+                        "success")
                 end
             end)
         end
@@ -105,7 +111,7 @@ Config.BreakdownTypes = {
             SetVehicleEngineOn(vehicle, false, false, false)
             TriggerEvent('realistic-vehicle:petrolLossFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡Tu vehículo tiene una fuga de gasolina!")
+                TriggerEvent('SendNotification', '', "¡Tu vehículo tiene una fuga de gasolina!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[4].duration, function()
                 local currentFuelLevel = GetVehicleFuelLevel(vehicle)
@@ -113,7 +119,7 @@ Config.BreakdownTypes = {
                 SetVehicleEngineOn(vehicle, true, true, true)
                 TriggerEvent('realistic-vehicle:petrolLossFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La fuga de gasolina ha sido sellada.")
+                    TriggerEvent('SendNotification', '', "La fuga de gasolina ha sido sellada.", 5000, "success")
                 end
             end)
         end
@@ -127,14 +133,15 @@ Config.BreakdownTypes = {
             SetVehicleEngineHealth(vehicle, -500)
             TriggerEvent('realistic-vehicle:transmissionFailureFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡La transmisión de tu vehículo está fallando!")
+                TriggerEvent('SendNotification', '', "¡La transmisión de tu vehículo está fallando!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[5].duration, function()
                 SetVehicleEngineHealth(vehicle, 1000.0)
                 SetVehicleEngineOn(vehicle, true, true, true)
                 TriggerEvent('realistic-vehicle:transmissionFailureFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La transmisión de tu vehículo ha sido reparada.")
+                    TriggerEvent('SendNotification', '', "La transmisión de tu vehículo ha sido reparada.", 5000,
+                        "success")
                 end
             end)
         end
@@ -147,13 +154,13 @@ Config.BreakdownTypes = {
             TriggerEvent('realistic-vehicle:batteryDrainFlag', vehicle, true)
             SetVehicleEngineOn(vehicle, false, true, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡La batería de tu vehículo está vacía!")
+                TriggerEvent('SendNotification', '', "¡La batería de tu vehículo está vacía!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[6].duration, function()
                 TriggerEvent('realistic-vehicle:batteryDrainFlag', vehicle, false)
                 SetVehicleEngineOn(vehicle, true, true, true)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La batería de tu vehículo se ha recargado.")
+                    TriggerEvent('SendNotification', '', "La batería de tu vehículo se ha recargado.", 5000, "success")
                 end
             end)
         end
@@ -167,13 +174,13 @@ Config.BreakdownTypes = {
             SetVehicleEngineTemperature(vehicle, GetVehicleEngineTemperature(vehicle) + 50.0)
             TriggerEvent('realistic-vehicle:radiatorLeakFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El radiador de tu vehículo tiene una fuga!")
+                TriggerEvent('SendNotification', '', "¡El radiador de tu vehículo tiene una fuga!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[7].duration, function()
                 SetVehicleEngineTemperature(vehicle, initialTemperature)
                 TriggerEvent('realistic-vehicle:radiatorLeakFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La fuga del radiador se ha sellado.")
+                    TriggerEvent('SendNotification', '', "La fuga del radiador se ha sellado.", 5000, "success")
                 end
             end)
         end
@@ -187,14 +194,14 @@ Config.BreakdownTypes = {
             SetVehicleHandbrake(vehicle, true)
             TriggerEvent('realistic-vehicle:brakeFailureFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡Los frenos de tu vehículo están fallando!")
+                TriggerEvent('SendNotification', '', "¡Los frenos de tu vehículo están fallando!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[8].duration, function()
                 SetVehicleBrake(vehicle, false)
                 SetVehicleHandbrake(vehicle, false)
                 TriggerEvent('realistic-vehicle:brakeFailureFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("Los frenos de tu vehículo han sido reparados.")
+                    TriggerEvent('SendNotification', '', "Los frenos de tu vehículo han sido reparados.", 5000, "success")
                 end
             end)
         end
@@ -207,13 +214,14 @@ Config.BreakdownTypes = {
             SetVehicleSuspensionHeight(vehicle, 0.05)
             TriggerEvent('realistic-vehicle:suspensionDamageFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡La suspensión de tu vehículo está dañada!")
+                TriggerEvent('SendNotification', '', "¡La suspensión de tu vehículo está dañada!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[9].duration, function()
                 SetVehicleSuspensionHeight(vehicle, 0.0)
                 TriggerEvent('realistic-vehicle:suspensionDamageFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La suspensión de tu vehículo ha sido reparada.")
+                    TriggerEvent('SendNotification', '', "La suspensión de tu vehículo ha sido reparada.", 5000,
+                        "success")
                 end
             end)
         end
@@ -227,12 +235,13 @@ Config.BreakdownTypes = {
             SetVehicleLights(vehicle, 1)
             TriggerEvent('realistic-vehicle:alternatorFailureFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El alternador de tu vehículo está fallando!")
+                TriggerEvent('SendNotification', '', "¡El alternador de tu vehículo está fallando!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[10].duration, function()
                 TriggerEvent('realistic-vehicle:alternatorFailureFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("El alternador de tu vehículo ha sido reparado.")
+                    TriggerEvent('SendNotification', '', "El alternador de tu vehículo ha sido reparado.", 5000,
+                        "success")
                 end
                 SetVehicleEngineOn(vehicle, true, true, true)
                 SetVehicleLights(vehicle, 0)
@@ -246,13 +255,14 @@ Config.BreakdownTypes = {
         action = function(vehicle)
             TriggerEvent('realistic-vehicle:transmissionFluidLeakFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡Hay una fuga de fluido de transmisión!")
+                TriggerEvent('SendNotification', '', "¡Hay una fuga de fluido de transmisión!", 5000, "error")
             end
             SetVehicleEnginePowerMultiplier(vehicle, -50.0)
             Citizen.SetTimeout(Config.BreakdownTypes[11].duration, function()
                 TriggerEvent('realistic-vehicle:transmissionFluidLeakFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("La fuga de fluido de transmisión se ha reparado.")
+                    TriggerEvent('SendNotification', '', "La fuga de fluido de transmisión se ha reparado.", 5000,
+                        "success")
                 end
                 SetVehicleEnginePowerMultiplier(vehicle, 0.0)
             end)
@@ -266,13 +276,13 @@ Config.BreakdownTypes = {
             SetVehicleClutch(vehicle, 0.2)
             TriggerEvent('realistic-vehicle:clutchFailureFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El embrague de tu vehículo está fallando!")
+                TriggerEvent('SendNotification', '', "¡El embrague de tu vehículo está fallando!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[12].duration, function()
                 SetVehicleClutch(vehicle, 1.0)
                 TriggerEvent('realistic-vehicle:clutchFailureFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("El embrague de tu vehículo ha sido reparado.")
+                    TriggerEvent('SendNotification', '', "El embrague de tu vehículo ha sido reparado.", 5000, "success")
                 end
             end)
         end
@@ -286,13 +296,13 @@ Config.BreakdownTypes = {
             SetVehicleFuelLevel(vehicle, 9.77)
             TriggerEvent('realistic-vehicle:fuelFilterCloggedFlag', vehicle, true)
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El filtro de combustible está obstruido!")
+                TriggerEvent('SendNotification', '', "¡El filtro de combustible está obstruido!", 5000, "error")
             end
             Citizen.SetTimeout(Config.BreakdownTypes[13].duration, function()
                 SetVehicleFuelLevel(vehicle, GetVehicleFuelLevel(vehicle) + 40.0)
                 TriggerEvent('realistic-vehicle:fuelFilterCloggedFlag', vehicle, false)
                 if Config.ShowNotifications then
-                    ESX.ShowNotification("El filtro de combustible ha sido limpiado.")
+                    TriggerEvent('SendNotification', '', "El filtro de combustible ha sido limpiado.", 5000, "success")
                 end
             end)
         end
@@ -303,12 +313,11 @@ Config.BreakdownTypes = {
         duration = 20000,
         action = function(vehicle)
             SetVehicleDoorOpen(vehicle, 4, false, false)
-
             --For Other Scripts Incompatibility
             -- TriggerEvent('realistic-vehicle:hoodLatchFailureFlag', vehicle, true)
 
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡El capó de tu vehículo se ha abierto debido a un fallo en los seguros!")
+                TriggerEvent('SendNotification', '', "¡El capó de tu vehículo se ha abierto debido a un fallo en los seguros!", 5000, "error")
             end
 
             -- To set if the hood closes on its own when a timeout finishes
@@ -316,7 +325,7 @@ Config.BreakdownTypes = {
             --     SetVehicleDoorShut(vehicle, 4, false)
             --     TriggerEvent('realistic-vehicle:hoodLatchFailureFlag', vehicle, false)
             --     if Config.ShowNotifications then
-            --         ESX.ShowNotification("El capó de tu vehículo ha sido cerrado.")
+            --     TriggerEvent('SendNotification', '', "El capó de tu vehículo ha sido cerrado", 5000, "success")
             --     end
             -- end)
         end
@@ -335,7 +344,7 @@ Config.BreakdownTypes = {
             end
 
             if Config.ShowNotifications then
-                ESX.ShowNotification("¡Una de las puertas de tu vehículo se ha soltado y se ha caído!")
+                TriggerEvent('SendNotification', '', "¡Una de las puertas de tu vehículo se ha soltado y se ha caído!", 5000, "error")
             end
         end
     },
