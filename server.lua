@@ -205,7 +205,7 @@ if Config.AutoVersionChecker then
                     print('╰────────────────────────────────────────────────────╯')
                 else
                     print('╭────────────────────────────────────────────────────╮')
-                    printCentered('[FiveM-MilageVehicleFailure] - Up-to-date', boxWidth, '32')  -- Green
+                    printWrapped('[FiveM-MilageVehicleFailure] - Up-to-date', boxWidth, '32')  -- Green
                     printWrapped('Current version: ' .. currentVersion, boxWidth, '32')  -- Green
                     print('╰────────────────────────────────────────────────────╯')
                 end
