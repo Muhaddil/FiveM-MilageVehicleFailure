@@ -637,285 +637,287 @@ end)
 --   `88b    ooo   .8'     `888.   888  `88b.        888          888     888       888      oo     .d8P  888  `88b    ooo  oo     .d8P
 --    `Y8bood8P'  o88o     o8888o o888o  o888o      o888o        o888o   o888o     o888o     8""88888P'  o888o  `Y8bood8P'  8""88888P'
 
-function isOnSandOrMountain()
-    local playerPed = PlayerPedId()
-    local veh = GetVehiclePedIsIn(playerPed, false)
-    local groundHash = GetGroundHash(veh)
-    
-    -- DebugPrint(groundHash)
-
-    local sandHashes = {
-        1635937914, -1885547121, -1595148316, 510490462, 
-        -1907520769, -840911308
-    }
-
-    local mountainHashes = {
-        815500405, 509508168, 951832588, 1913209870, 1333033863, 
-        1288448767, 1336319281, -1286696947, -461750719, 
-        -1289542914, -730990693, -840216541
-    }
-
-    if contains(sandHashes, groundHash) then
-        return "sand"
-    elseif contains(mountainHashes, groundHash) then
-        return "mountain"
-    else
-        return "road"
-    end
-end
-
-function contains(table, element)
-    for _, value in pairs(table) do
-        if value == element then
-            return true
-        end
-    end
-    return false
-end
-
-function GetGroundHash(veh)
-    local coords = GetEntityCoords(veh)
-    local num = StartShapeTestCapsule(coords.x, coords.y, coords.z + 4, coords.x, coords.y, coords.z - 2.0, 1, 1, veh, 7)
-    local arg1, arg2, arg3, arg4, arg5 = GetShapeTestResultEx(num)
-    return arg5
-end
-
-function isFourWheelDrive(vehicle)
-    local vehicleClass = GetVehicleClass(vehicle)
-    return vehicleClass == 8 or vehicleClass == 9 or vehicleClass == 11
-end
-
-function hasOffroadTires(vehicle)
-    return GetVehicleMod(vehicle, 23) == 9
-end
-
-function getGroundZAtCoords(coords)
-    local _, groundZ = GetGroundZAndNormalFor_3dCoord(coords.x, coords.y, coords.z)
-    if not groundZ then
-        local rayHandle = StartShapeTestRay(coords.x, coords.y, coords.z + 100.0, coords.x, coords.y, coords.z - 100.0,
-            10, 0, 7)
-        local _, hit, _, _, hitZ = GetShapeTestResult(rayHandle)
-        if hit then
-            groundZ = hitZ
-        end
-    end
-    return groundZ or coords.z
-end
-
-function simulateWheelSinking(vehicle, terrain)
-    local pos = GetEntityCoords(vehicle)
-    local groundZ = getGroundZAtCoords(pos)
-    local baseSinkingAmount = 0.01
-    local maxSinkingDepth = -0.2
-
-    local speed = GetEntitySpeed(vehicle)
-    local sinkingAmount = baseSinkingAmount + (speed * 0.02)
-
-    if terrain == "sand" or terrain == "mountain" then
-        if speed < 1 then
-            local currentZ = pos.z
-
-            if not originalZ then
-                originalZ = currentZ
-            end
-
-            local sinkingDepth = currentZ - groundZ
-
-            if sinkingDepth > maxSinkingDepth then
-                local newZ = currentZ - sinkingAmount
-                if sinkingDepth - sinkingAmount > maxSinkingDepth then
-                    FreezeEntityPosition(vehicle, true)
-                    SetEntityCoordsNoOffset(vehicle, pos.x, pos.y, newZ, false, false, false, false)
-
-                    for i = 0, 3 do
-                        local wheelBone = GetEntityBoneIndexByName(vehicle, "wheel_" .. i)
-                        if wheelBone ~= -1 then
-                            local wheelPos = GetWorldPositionOfEntityBone(vehicle, wheelBone)
-                            local wheelZ = wheelPos.z - sinkingAmount
-                            SetVehicleWheelPosition(vehicle, i, wheelPos.x, wheelPos.y, wheelZ)
-                        end
-                    end
-
-                    FreezeEntityPosition(vehicle, false)
-                end
-            end
-        end
-    end
-end
-
-function restoreVehicleHeightIfNotSinking(vehicle, terrain)
-    if terrain ~= "sand" and terrain ~= "mountain" and originalZ then
-        local pos = GetEntityCoords(vehicle)
-        SetEntityCoordsNoOffset(vehicle, pos.x, pos.y, originalZ, false, false, false, false)
-        originalZ = nil
-    end
-end
-
-function applyTerrainEffects(vehicle, terrain)
-    if Config.CarSinking then
-        simulateWheelSinking(vehicle, terrain)
-        restoreVehicleHeightIfNotSinking(vehicle, terrain)
-    end
-    applyGripAndSlideEffects(vehicle, terrain)
-end
-
-function applyGripAndSlideEffects(vehicle, terrain)
-    local driveType = isFourWheelDrive(vehicle)
-    local hasOffroadTyres = hasOffroadTires(vehicle)
-
-    if vehicle ~= lastVehicle then
-        originalTractionCurveMin = nil
-        originalTractionLossMult = nil
-        originalLowSpeedTractionLossMult = nil
-        lastVehicle = vehicle
-    end
-
-    if originalTractionCurveMin == nil or originalTractionLossMult == nil or originalLowSpeedTractionLossMult == nil then
-        originalTractionCurveMin = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin")
-        originalTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult")
-        originalLowSpeedTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult")
-    end
-
-    if terrain == "sand" then
-        if not driveType then
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5)
-        else
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0)
-        end
-
-        if not hasOffroadTyres then
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 2.0)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8)
-        else
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 0.8)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.2)
-        end
-    elseif terrain == "mountain" then
-        if not driveType then
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5)
-        else
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0)
-        end
-
-        if not hasOffroadTyres then
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.8)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.7)
-        else
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.0)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.1)
-        end
-    else
-        if hasOffroadTyres then
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.2)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8)
-        else
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", originalTractionLossMult)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", originalTractionCurveMin)
-            SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult",
-                originalLowSpeedTractionLossMult)
-        end
-    end
-end
-
-function limitSpeed(vehicle, terrain)
-    local maxSpeedKmH = Config.MaxSpeed
-    local maxSpeedMs = maxSpeedKmH / 3.6
-    local currentSpeedMs = GetEntitySpeed(vehicle)
-
-    -- DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
-    -- DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
-    -- DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
-
-    if terrain == "sand" or terrain == "mountain" then
-        if currentSpeedMs > maxSpeedMs then
-            local speedDifference = currentSpeedMs - maxSpeedMs
-            local reductionFactor = Config.reductionFactor
-
-            if not speedLimitActive then
-                local newSpeedMs = currentSpeedMs - (speedDifference * reductionFactor)
-                SetVehicleForwardSpeed(vehicle, newSpeedMs)
-
-                -- DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
-
-                if currentSpeedMs - newSpeedMs < 1 then
-                    SetEntityMaxSpeed(vehicle, maxSpeedMs)
-                    speedLimitActive = true
-                end
-            end
-        end
-    else
-        local maxSpeedOriginal = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fInitialDriveMaxFlatVel")
-        SetEntityMaxSpeed(vehicle, maxSpeedOriginal)
-        speedLimitActive = false
-    end
-end
-
-function isNormalCar(vehicleClass)
-    local normalVehicleClasses = {
-        [0] = true, -- Compacts
-        [1] = true, -- Sedans
-        [2] = true, -- SUVs
-        [3] = true, -- Coupes
-        [4] = true, -- Muscle
-        [5] = true, -- Classic Sports Cars
-        [6] = true, -- Sports Cars
-        [7] = true  -- Supercars
-    }
-
-    return normalVehicleClasses[vehicleClass] ~= nil
-end
-
-Citizen.CreateThread(function()
-    while true do
-        local timeout = Config.CarPhysicsTimeout
+if Config.EnableCarPhysics then
+    function isOnSandOrMountain()
         local playerPed = PlayerPedId()
         local veh = GetVehiclePedIsIn(playerPed, false)
+        local groundHash = GetGroundHash(veh)
 
-        if veh ~= 0 then
-            timeout = 500
-            local terrain = isOnSandOrMountain()
-            -- DebugPrint(terrain)
-            applyTerrainEffects(veh, terrain)
+        -- DebugPrint(groundHash)
 
-            local vehicleClass = GetVehicleClass(veh)
-            local hasOffroadTyres = hasOffroadTires(veh)
+        local sandHashes = {
+            1635937914, -1885547121, -1595148316, 510490462,
+            -1907520769, -840911308
+        }
 
-            if isNormalCar(vehicleClass) and not hasOffroadTyres then
-                limitSpeed(veh, terrain)
+        local mountainHashes = {
+            815500405, 509508168, 951832588, 1913209870, 1333033863,
+            1288448767, 1336319281, -1286696947, -461750719,
+            -1289542914, -730990693, -840216541
+        }
+
+        if contains(sandHashes, groundHash) then
+            return "sand"
+        elseif contains(mountainHashes, groundHash) then
+            return "mountain"
+        else
+            return "road"
+        end
+    end
+
+    function contains(table, element)
+        for _, value in pairs(table) do
+            if value == element then
+                return true
             end
+        end
+        return false
+    end
 
-            if terrain == "sand" or terrain == "mountain" then
-                local multiplier = getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
-                SetVehicleEngineTorqueMultiplier(veh, multiplier)
+    function GetGroundHash(veh)
+        local coords = GetEntityCoords(veh)
+        local num = StartShapeTestCapsule(coords.x, coords.y, coords.z + 4, coords.x, coords.y, coords.z - 2.0, 1, 1, veh, 7)
+        local arg1, arg2, arg3, arg4, arg5 = GetShapeTestResultEx(num)
+        return arg5
+    end
+
+    function isFourWheelDrive(vehicle)
+        local vehicleClass = GetVehicleClass(vehicle)
+        return vehicleClass == 8 or vehicleClass == 9 or vehicleClass == 11
+    end
+
+    function hasOffroadTires(vehicle)
+        return GetVehicleMod(vehicle, 23) == 9
+    end
+
+    function getGroundZAtCoords(coords)
+        local _, groundZ = GetGroundZAndNormalFor_3dCoord(coords.x, coords.y, coords.z)
+        if not groundZ then
+            local rayHandle = StartShapeTestRay(coords.x, coords.y, coords.z + 100.0, coords.x, coords.y, coords.z - 100.0,
+                10, 0, 7)
+            local _, hit, _, _, hitZ = GetShapeTestResult(rayHandle)
+            if hit then
+                groundZ = hitZ
+            end
+        end
+        return groundZ or coords.z
+    end
+
+    function simulateWheelSinking(vehicle, terrain)
+        local pos = GetEntityCoords(vehicle)
+        local groundZ = getGroundZAtCoords(pos)
+        local baseSinkingAmount = 0.01
+        local maxSinkingDepth = -0.2
+
+        local speed = GetEntitySpeed(vehicle)
+        local sinkingAmount = baseSinkingAmount + (speed * 0.02)
+
+        if terrain == "sand" or terrain == "mountain" then
+            if speed < 1 then
+                local currentZ = pos.z
+
+                if not originalZ then
+                    originalZ = currentZ
+                end
+
+                local sinkingDepth = currentZ - groundZ
+
+                if sinkingDepth > maxSinkingDepth then
+                    local newZ = currentZ - sinkingAmount
+                    if sinkingDepth - sinkingAmount > maxSinkingDepth then
+                        FreezeEntityPosition(vehicle, true)
+                        SetEntityCoordsNoOffset(vehicle, pos.x, pos.y, newZ, false, false, false, false)
+
+                        for i = 0, 3 do
+                            local wheelBone = GetEntityBoneIndexByName(vehicle, "wheel_" .. i)
+                            if wheelBone ~= -1 then
+                                local wheelPos = GetWorldPositionOfEntityBone(vehicle, wheelBone)
+                                local wheelZ = wheelPos.z - sinkingAmount
+                                SetVehicleWheelPosition(vehicle, i, wheelPos.x, wheelPos.y, wheelZ)
+                            end
+                        end
+
+                        FreezeEntityPosition(vehicle, false)
+                    end
+                end
+            end
+        end
+    end
+
+    function restoreVehicleHeightIfNotSinking(vehicle, terrain)
+        if terrain ~= "sand" and terrain ~= "mountain" and originalZ then
+            local pos = GetEntityCoords(vehicle)
+            SetEntityCoordsNoOffset(vehicle, pos.x, pos.y, originalZ, false, false, false, false)
+            originalZ = nil
+        end
+    end
+
+    function applyTerrainEffects(vehicle, terrain)
+        if Config.CarSinking then
+            simulateWheelSinking(vehicle, terrain)
+            restoreVehicleHeightIfNotSinking(vehicle, terrain)
+        end
+        applyGripAndSlideEffects(vehicle, terrain)
+    end
+
+    function applyGripAndSlideEffects(vehicle, terrain)
+        local driveType = isFourWheelDrive(vehicle)
+        local hasOffroadTyres = hasOffroadTires(vehicle)
+
+        if vehicle ~= lastVehicle then
+            originalTractionCurveMin = nil
+            originalTractionLossMult = nil
+            originalLowSpeedTractionLossMult = nil
+            lastVehicle = vehicle
+        end
+
+        if originalTractionCurveMin == nil or originalTractionLossMult == nil or originalLowSpeedTractionLossMult == nil then
+            originalTractionCurveMin = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin")
+            originalTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult")
+            originalLowSpeedTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult")
+        end
+
+        if terrain == "sand" then
+            if not driveType then
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5)
             else
-                SetVehicleEngineTorqueMultiplier(veh, 1.0)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0)
+            end
+
+            if not hasOffroadTyres then
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 2.0)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8)
+            else
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 0.8)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.2)
+            end
+        elseif terrain == "mountain" then
+            if not driveType then
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5)
+            else
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0)
+            end
+
+            if not hasOffroadTyres then
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.8)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.7)
+            else
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.0)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.1)
+            end
+        else
+            if hasOffroadTyres then
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.2)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8)
+            else
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", originalTractionLossMult)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", originalTractionCurveMin)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult",
+                    originalLowSpeedTractionLossMult)
+            end
+        end
+    end
+
+    function limitSpeed(vehicle, terrain)
+        local maxSpeedKmH = Config.MaxSpeed
+        local maxSpeedMs = maxSpeedKmH / 3.6
+        local currentSpeedMs = GetEntitySpeed(vehicle)
+
+        -- DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
+        -- DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
+        -- DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
+
+        if terrain == "sand" or terrain == "mountain" then
+            if currentSpeedMs > maxSpeedMs then
+                local speedDifference = currentSpeedMs - maxSpeedMs
+                local reductionFactor = Config.reductionFactor
+
+                if not speedLimitActive then
+                    local newSpeedMs = currentSpeedMs - (speedDifference * reductionFactor)
+                    SetVehicleForwardSpeed(vehicle, newSpeedMs)
+
+                    -- DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
+
+                    if currentSpeedMs - newSpeedMs < 1 then
+                        SetEntityMaxSpeed(vehicle, maxSpeedMs)
+                        speedLimitActive = true
+                    end
+                end
+            end
+        else
+            local maxSpeedOriginal = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fInitialDriveMaxFlatVel")
+            SetEntityMaxSpeed(vehicle, maxSpeedOriginal)
+            speedLimitActive = false
+        end
+    end
+
+    function isNormalCar(vehicleClass)
+        local normalVehicleClasses = {
+            [0] = true, -- Compacts
+            [1] = true, -- Sedans
+            [2] = true, -- SUVs
+            [3] = true, -- Coupes
+            [4] = true, -- Muscle
+            [5] = true, -- Classic Sports Cars
+            [6] = true, -- Sports Cars
+            [7] = true -- Supercars
+        }
+
+        return normalVehicleClasses[vehicleClass] ~= nil
+    end
+
+    Citizen.CreateThread(function()
+        while true do
+            local timeout = Config.CarPhysicsTimeout
+            local playerPed = PlayerPedId()
+            local veh = GetVehiclePedIsIn(playerPed, false)
+
+            if veh ~= 0 then
+                timeout = 500
+                local terrain = isOnSandOrMountain()
+                -- DebugPrint(terrain)
+                applyTerrainEffects(veh, terrain)
+
+                local vehicleClass = GetVehicleClass(veh)
+                local hasOffroadTyres = hasOffroadTires(veh)
+
+                if isNormalCar(vehicleClass) and not hasOffroadTyres then
+                    limitSpeed(veh, terrain)
+                end
+
+                if terrain == "sand" or terrain == "mountain" then
+                    local multiplier = getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
+                    SetVehicleEngineTorqueMultiplier(veh, multiplier)
+                else
+                    SetVehicleEngineTorqueMultiplier(veh, 1.0)
+                end
+            end
+
+            Citizen.Wait(timeout)
+        end
+    end)
+
+    function getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
+        local multiplier = 1.0
+
+        if terrain == "sand" then
+            if vehicleClass == 8 or vehicleClass == 9 then
+                multiplier = hasOffroadTyres and 0.9 or 0.7
+            elseif vehicleClass == 11 then
+                multiplier = hasOffroadTyres and 0.8 or 0.6
+            else
+                multiplier = hasOffroadTyres and 0.5 or 0.3
+            end
+        elseif terrain == "mountain" then
+            if vehicleClass == 8 or vehicleClass == 9 then
+                multiplier = hasOffroadTyres and 0.9 or 0.8
+            elseif vehicleClass == 11 then
+                multiplier = hasOffroadTyres and 0.8 or 0.7
+            else
+                multiplier = hasOffroadTyres and 0.6 or 0.4
             end
         end
 
-        Citizen.Wait(timeout)
+        return multiplier
     end
-end)
-
-function getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
-    local multiplier = 1.0
-
-    if terrain == "sand" then
-        if vehicleClass == 8 or vehicleClass == 9 then
-            multiplier = hasOffroadTyres and 0.9 or 0.7
-        elseif vehicleClass == 11 then
-            multiplier = hasOffroadTyres and 0.8 or 0.6
-        else
-            multiplier = hasOffroadTyres and 0.5 or 0.3
-        end
-    elseif terrain == "mountain" then
-        if vehicleClass == 8 or vehicleClass == 9 then
-            multiplier = hasOffroadTyres and 0.9 or 0.8
-        elseif vehicleClass == 11 then
-            multiplier = hasOffroadTyres and 0.8 or 0.7
-        else
-            multiplier = hasOffroadTyres and 0.6 or 0.4
-        end
-    end
-
-    return multiplier
 end

@@ -27,7 +27,7 @@ Config.UseOXNotifications = true
 Config.UseExternalMileageSystem = false
 
 -- Config for the vehicle physics in harsh terrains
-
+Config.EnableCarPhysics = true
 Config.MaxSpeed = 25            -- In KM/hours
 Config.CarPhysicsTimeout = 1500 -- In milliseconds
 Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
