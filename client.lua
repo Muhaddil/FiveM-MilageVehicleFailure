@@ -643,7 +643,7 @@ if Config.EnableCarPhysics then
         local veh = GetVehiclePedIsIn(playerPed, false)
         local groundHash = GetGroundHash(veh)
 
-        -- DebugPrint(groundHash)
+        DebugPrint(groundHash)
 
         local sandHashes = {
             1635937914, -1885547121, -1595148316, 510490462,
@@ -763,69 +763,79 @@ if Config.EnableCarPhysics then
     function applyGripAndSlideEffects(vehicle, terrain)
         local driveType = isFourWheelDrive(vehicle)
         local hasOffroadTyres = hasOffroadTires(vehicle)
-
+        local isEmergency = isEmergencyVehicle(vehicle)
+        local tractionBonus = isEmergency and Config.TractionBonus or 0
+    
         if vehicle ~= lastVehicle then
             originalTractionCurveMin = nil
             originalTractionLossMult = nil
             originalLowSpeedTractionLossMult = nil
             lastVehicle = vehicle
         end
-
+    
         if originalTractionCurveMin == nil or originalTractionLossMult == nil or originalLowSpeedTractionLossMult == nil then
             originalTractionCurveMin = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin")
             originalTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult")
             originalLowSpeedTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult")
         end
-
+    
         if terrain == "sand" then
             if not driveType then
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5 - tractionBonus)
             else
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0 - tractionBonus)
             end
-
+    
             if not hasOffroadTyres then
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 2.0)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 2.0 - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8 + tractionBonus)
             else
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 0.8)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.2)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 0.8 - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.2 + tractionBonus)
             end
         elseif terrain == "mountain" then
             if not driveType then
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5 - tractionBonus)
             else
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0 - tractionBonus)
             end
-
+    
             if not hasOffroadTyres then
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.8)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.7)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.8 - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.7 + tractionBonus)
             else
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.0)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.1)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.0 - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 1.1 + tractionBonus)
             end
         else
             if hasOffroadTyres then
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.2)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.2 - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8 + tractionBonus)
             else
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", originalTractionLossMult)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", originalTractionCurveMin)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult",
-                    originalLowSpeedTractionLossMult)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", originalTractionLossMult - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", originalTractionCurveMin + tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", originalLowSpeedTractionLossMult - tractionBonus)
             end
         end
     end
-
+    
+    function isEmergencyVehicle(vehicle)
+        local emergencyClasses = {
+            [18] = true
+        }
+    
+        local vehicleClass = GetVehicleClass(vehicle)
+        return emergencyClasses[vehicleClass] ~= nil
+    end
+    
     function limitSpeed(vehicle, terrain)
         local maxSpeedKmH = Config.MaxSpeed
         local maxSpeedMs = maxSpeedKmH / 3.6
         local currentSpeedMs = GetEntitySpeed(vehicle)
 
-        -- DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
-        -- DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
-        -- DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
+        DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
+        DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
+        DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
 
         if terrain == "sand" or terrain == "mountain" then
             if currentSpeedMs > maxSpeedMs then
@@ -836,7 +846,7 @@ if Config.EnableCarPhysics then
                     local newSpeedMs = currentSpeedMs - (speedDifference * reductionFactor)
                     SetVehicleForwardSpeed(vehicle, newSpeedMs)
 
-                    -- DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
+                    DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
 
                     if currentSpeedMs - newSpeedMs < 1 then
                         SetEntityMaxSpeed(vehicle, maxSpeedMs)
@@ -875,7 +885,7 @@ if Config.EnableCarPhysics then
             if veh ~= 0 then
                 timeout = 500
                 local terrain = isOnSandOrMountain()
-                -- DebugPrint(terrain)
+                DebugPrint(terrain)
                 applyTerrainEffects(veh, terrain)
 
                 local vehicleClass = GetVehicleClass(veh)

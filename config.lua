@@ -32,6 +32,7 @@ Config.MaxSpeed = 25            -- In KM/hours
 Config.CarPhysicsTimeout = 1500 -- In milliseconds
 Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
 Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
+Config.TractionBonus = 0.2      -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
 
 -- Types of breakdowns
 Config.BreakdownTypes = {
