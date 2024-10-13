@@ -16,7 +16,7 @@ Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
 Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
 Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
 Config.preventVehicleFlip = true        -- Disable flipping overturned cars
-Config.damageMultiplier = 3             -- Damage multiplier applied to the engine in each crash
+Config.damageMultiplier = 5             -- Damage multiplier applied to the engine in each crash
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 Config.AutoRunSQL = true
 Config.AutoVersionChecker = true
@@ -28,8 +28,8 @@ Config.UseExternalMileageSystem = false
 
 -- Config for the vehicle physics in harsh terrains
 Config.EnableCarPhysics = true
-Config.MaxSpeed = 25            -- In KM/hours
-Config.CarPhysicsTimeout = 1500 -- In milliseconds
+Config.MaxSpeed = 40            -- In KM/hours
+Config.CarPhysicsTimeout = 2500 -- In milliseconds
 Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
 Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
 Config.TractionBonus = 0.2      -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass

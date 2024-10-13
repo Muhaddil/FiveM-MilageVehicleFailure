@@ -40,8 +40,16 @@ function SendNotification(msgtitle, msg, time, type)
         lib.notify({
             title = msgtitle,
             description = msg,
-            type = type,
-            position = 'center',
+            showDuration = true,
+            type = type2,
+            style = {
+                backgroundColor = 'rgba(0, 0, 0, 0.75)',
+                color = 'rgba(255, 255, 255, 1)',
+                ['.description'] = {
+                  color = '#909296',
+                  backgroundColor = 'transparent'
+                }
+            }
         })
     else
         if Config.FrameWork == 'qb' then
@@ -653,7 +661,7 @@ if Config.EnableCarPhysics then
         local mountainHashes = {
             815500405, 509508168, 951832588, 1913209870, 1333033863,
             1288448767, 1336319281, -1286696947, -461750719,
-            -1289542914, -730990693, -840216541, 2128369009
+            -1289542914, -730990693, -840216541, 2128369009, -1942898710
         }
 
         if contains(sandHashes, groundHash) then
@@ -767,6 +775,9 @@ if Config.EnableCarPhysics then
         local hasOffroadTyres = hasOffroadTires(vehicle)
         local isEmergency = isEmergencyVehicle(vehicle)
         local tractionBonus = isEmergency and Config.TractionBonus or 0
+        DebugPrint(isEmergency)
+        DebugPrint(hasOffroadTyres)
+        DebugPrint(driveType)
 
         if vehicle ~= lastVehicle then
             originalTractionCurveMin = nil
@@ -839,9 +850,9 @@ if Config.EnableCarPhysics then
         local maxSpeedMs = maxSpeedKmH / 3.6
         local currentSpeedMs = GetEntitySpeed(vehicle)
 
-        DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
-        DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
-        DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
+        -- DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
+        -- DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
+        -- DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
 
         if terrain == "sand" or terrain == "mountain" then
             if currentSpeedMs > maxSpeedMs then
@@ -849,21 +860,38 @@ if Config.EnableCarPhysics then
                 local reductionFactor = Config.reductionFactor
 
                 if not speedLimitActive then
-                    local newSpeedMs = currentSpeedMs - (speedDifference * reductionFactor)
-                    SetVehicleForwardSpeed(vehicle, newSpeedMs)
+                    speedLimitActive = true
 
-                    DebugPrint("New Speed: " .. newSpeedMs .. " m/s")
+                    Citizen.CreateThread(function()
+                        while true do
+                            currentSpeedMs = GetEntitySpeed(vehicle)
+                            local newSpeedMs = currentSpeedMs - (speedDifference * reductionFactor)
 
-                    if currentSpeedMs - newSpeedMs < 1 then
-                        SetEntityMaxSpeed(vehicle, maxSpeedMs)
-                        speedLimitActive = true
-                    end
+                            if currentSpeedMs > maxSpeedMs and speedLimitActive then
+                                SetVehicleCheatPowerIncrease(vehicle, -100.0)
+                                SetVehicleBrake(vehicle, true)
+                                SetVehicleCurrentRpm(vehicle, 0.0)
+                            else
+                                if currentSpeedMs - newSpeedMs < 1 then
+                                    SetEntityMaxSpeed(vehicle, maxSpeedMs)
+                                    speedLimitActive = true
+                                    break
+                                end
+                            end
+                            Wait(0)
+                        end
+                    end)
                 end
             end
         else
             local maxSpeedOriginal = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fInitialDriveMaxFlatVel")
             SetEntityMaxSpeed(vehicle, maxSpeedOriginal)
-            speedLimitActive = false
+            if speedLimitActive then
+                speedLimitActive = false
+                SetVehicleCheatPowerIncrease(vehicle, 1.0)
+                SetVehicleBrake(vehicle, false)
+                SetVehicleCurrentRpm(vehicle, 1.0)
+            end
         end
     end
 
@@ -887,6 +915,32 @@ if Config.EnableCarPhysics then
             local timeout = Config.CarPhysicsTimeout
             local playerPed = PlayerPedId()
             local veh = GetVehiclePedIsIn(playerPed, false)
+            if veh ~= 0 then
+                timeout = 500
+                local terrain = isOnSandOrMountain()
+
+                local vehicleClass = GetVehicleClass(veh)
+                local hasOffroadTyres = hasOffroadTires(veh)
+
+                -- if isNormalCar(vehicleClass) and not hasOffroadTyres or isEmergencyVehicle and not hasOffroadTyres then
+                --     limitSpeed(veh, terrain)
+                -- end
+                if isNormalCar(vehicleClass) or isEmergencyVehicle and not hasOffroadTyres then
+                    limitSpeed(veh, terrain)
+                end
+
+            end
+
+            Citizen.Wait(timeout)
+        end
+    end)
+
+
+    Citizen.CreateThread(function()
+        while true do
+            local timeout = Config.CarPhysicsTimeout
+            local playerPed = PlayerPedId()
+            local veh = GetVehiclePedIsIn(playerPed, false)
 
             if veh ~= 0 then
                 timeout = 500
@@ -901,12 +955,12 @@ if Config.EnableCarPhysics then
                     limitSpeed(veh, terrain)
                 end
 
-                if terrain == "sand" or terrain == "mountain" then
-                    local multiplier = getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
-                    SetVehicleEngineTorqueMultiplier(veh, multiplier)
-                else
-                    SetVehicleEngineTorqueMultiplier(veh, 1.0)
-                end
+                -- if terrain == "sand" or terrain == "mountain" then
+                --     local multiplier = getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
+                --     SetVehicleEngineTorqueMultiplier(veh, multiplier)
+                -- else
+                --     SetVehicleEngineTorqueMultiplier(veh, 1.0)
+                -- end
             end
 
             Citizen.Wait(timeout)
