@@ -31,7 +31,7 @@ end
 
 if Config.FrameWork == "esx" then
     ESX = exports['es_extended']:getSharedObject()
-    elseif Config.FrameWork == "qb" then
+elseif Config.FrameWork == "qb" then
     QBCore = exports['qb-core']:GetCoreObject()
 end
 
@@ -211,7 +211,7 @@ Citizen.CreateThread(function()
                 end
             end
         end
-    ::continueLoop::
+        ::continueLoop::
     end
 end)
 
@@ -244,10 +244,10 @@ if Config.DebugMode then
     RegisterCommand('SetVehicleEngineHealth', function(source, args)
         local playerPed = GetPlayerPed(-1)
         local vehicle = GetVehiclePedIsIn(playerPed, false)
-    
+
         if vehicle ~= 0 then
             local engineHealth = tonumber(args[1])
-    
+
             if engineHealth then
                 SetVehicleEngineHealth(vehicle, engineHealth)
                 DebugPrint('Usado comando "SetVehicleEngineHealth" con valor: ' .. engineHealth)
@@ -257,7 +257,7 @@ if Config.DebugMode then
         else
             DebugPrint('No estás en un vehículo.')
         end
-    end, false)    
+    end, false)
 end
 
 RegisterNetEvent('realistic-vehicle:triggerTestBreakdown')
@@ -647,13 +647,13 @@ if Config.EnableCarPhysics then
 
         local sandHashes = {
             1635937914, -1885547121, -1595148316, 510490462,
-            -1907520769, -840911308
+            -1907520769, -840911308, -356706482
         }
 
         local mountainHashes = {
             815500405, 509508168, 951832588, 1913209870, 1333033863,
             1288448767, 1336319281, -1286696947, -461750719,
-            -1289542914, -730990693, -840216541
+            -1289542914, -730990693, -840216541, 2128369009
         }
 
         if contains(sandHashes, groundHash) then
@@ -676,7 +676,8 @@ if Config.EnableCarPhysics then
 
     function GetGroundHash(veh)
         local coords = GetEntityCoords(veh)
-        local num = StartShapeTestCapsule(coords.x, coords.y, coords.z + 4, coords.x, coords.y, coords.z - 2.0, 1, 1, veh, 7)
+        local num = StartShapeTestCapsule(coords.x, coords.y, coords.z + 4, coords.x, coords.y, coords.z - 2.0, 1, 1, veh,
+            7)
         local arg1, arg2, arg3, arg4, arg5 = GetShapeTestResultEx(num)
         return arg5
     end
@@ -687,13 +688,14 @@ if Config.EnableCarPhysics then
     end
 
     function hasOffroadTires(vehicle)
-        return GetVehicleMod(vehicle, 23) == 9
+        return GetVehicleWheelType(vehicle) == 4
     end
 
     function getGroundZAtCoords(coords)
         local _, groundZ = GetGroundZAndNormalFor_3dCoord(coords.x, coords.y, coords.z)
         if not groundZ then
-            local rayHandle = StartShapeTestRay(coords.x, coords.y, coords.z + 100.0, coords.x, coords.y, coords.z - 100.0,
+            local rayHandle = StartShapeTestRay(coords.x, coords.y, coords.z + 100.0, coords.x, coords.y,
+                coords.z - 100.0,
                 10, 0, 7)
             local _, hit, _, _, hitZ = GetShapeTestResult(rayHandle)
             if hit then
@@ -765,27 +767,28 @@ if Config.EnableCarPhysics then
         local hasOffroadTyres = hasOffroadTires(vehicle)
         local isEmergency = isEmergencyVehicle(vehicle)
         local tractionBonus = isEmergency and Config.TractionBonus or 0
-    
+
         if vehicle ~= lastVehicle then
             originalTractionCurveMin = nil
             originalTractionLossMult = nil
             originalLowSpeedTractionLossMult = nil
             lastVehicle = vehicle
         end
-    
+
         if originalTractionCurveMin == nil or originalTractionLossMult == nil or originalLowSpeedTractionLossMult == nil then
             originalTractionCurveMin = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin")
             originalTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult")
-            originalLowSpeedTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult")
+            originalLowSpeedTractionLossMult = GetVehicleHandlingFloat(vehicle, "CHandlingData",
+                "fLowSpeedTractionLossMult")
         end
-    
+
         if terrain == "sand" then
             if not driveType then
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.5 - tractionBonus)
             else
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0 - tractionBonus)
             end
-    
+
             if not hasOffroadTyres then
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 2.0 - tractionBonus)
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8 + tractionBonus)
@@ -799,7 +802,7 @@ if Config.EnableCarPhysics then
             else
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", 1.0 - tractionBonus)
             end
-    
+
             if not hasOffroadTyres then
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.8 - tractionBonus)
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.7 + tractionBonus)
@@ -812,22 +815,25 @@ if Config.EnableCarPhysics then
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", 1.2 - tractionBonus)
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", 0.8 + tractionBonus)
             else
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult", originalTractionLossMult - tractionBonus)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin", originalTractionCurveMin + tractionBonus)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult", originalLowSpeedTractionLossMult - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionLossMult",
+                    originalTractionLossMult - tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fTractionCurveMin",
+                    originalTractionCurveMin + tractionBonus)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fLowSpeedTractionLossMult",
+                    originalLowSpeedTractionLossMult - tractionBonus)
             end
         end
     end
-    
+
     function isEmergencyVehicle(vehicle)
         local emergencyClasses = {
             [18] = true
         }
-    
+
         local vehicleClass = GetVehicleClass(vehicle)
         return emergencyClasses[vehicleClass] ~= nil
     end
-    
+
     function limitSpeed(vehicle, terrain)
         local maxSpeedKmH = Config.MaxSpeed
         local maxSpeedMs = maxSpeedKmH / 3.6
@@ -870,7 +876,7 @@ if Config.EnableCarPhysics then
             [4] = true, -- Muscle
             [5] = true, -- Classic Sports Cars
             [6] = true, -- Sports Cars
-            [7] = true -- Supercars
+            [7] = true  -- Supercars
         }
 
         return normalVehicleClasses[vehicleClass] ~= nil
