@@ -53,8 +53,8 @@ function SendNotification(msgtitle, msg, time, type)
                 backgroundColor = 'rgba(0, 0, 0, 0.75)',
                 color = 'rgba(255, 255, 255, 1)',
                 ['.description'] = {
-                  color = '#909296',
-                  backgroundColor = 'transparent'
+                    color = '#909296',
+                    backgroundColor = 'transparent'
                 }
             }
         })
@@ -925,17 +925,17 @@ if Config.EnableCarPhysics then
             lastVehicle = vehicle
             brakeTemperature = 0
         end
-    
+
         local speed = GetEntitySpeed(vehicle) * 3.6
-    
+
         if speed > 5 then
             local brakePressure = GetVehicleWheelBrakePressure(vehicle, 0)
-    
+
             if brakePressure > 0.1 then
                 brakeTemperature = brakeTemperature + Config.BrakeTemperaturaGain
             end
             print(brakeTemperature)
-    
+
             if brakeTemperature >= maxBrakeTemperature then
                 isBrakeOverheated = true
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.0)
@@ -949,7 +949,7 @@ if Config.EnableCarPhysics then
                     brakeTemperature = brakeTemperature - coolingRate * 5
                     isBrakeOverheated = false
                 end
-    
+
                 if brakeTemperature > 0 and brakeTemperature < maxBrakeTemperature then
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
@@ -963,7 +963,7 @@ if Config.EnableCarPhysics then
             end
         end
     end
-    
+
     Citizen.CreateThread(function()
         while true do
             local timeout = Config.CarPhysicsTimeout
@@ -982,7 +982,6 @@ if Config.EnableCarPhysics then
                 if isNormalCar(vehicleClass) or isEmergencyVehicle and not hasOffroadTyres then
                     limitSpeed(veh, terrain)
                 end
-
             end
 
             Citizen.Wait(timeout)
@@ -992,10 +991,10 @@ if Config.EnableCarPhysics then
     Citizen.CreateThread(function()
         while true do
             checkInterval3 = 5000
-    
+
             local playerPed = GetPlayerPed(-1)
             local vehicle = GetVehiclePedIsIn(playerPed, false)
-    
+
             if vehicle and IsVehicleOnAllWheels(vehicle) then
                 manageBrakeTemperature(vehicle)
                 checkInterval3 = 500
@@ -1003,26 +1002,26 @@ if Config.EnableCarPhysics then
             Citizen.Wait(checkInterval3)
         end
     end)
-    
+
     Citizen.CreateThread(function()
         while true do
             local timeout = Config.CarPhysicsTimeout
             local playerPed = PlayerPedId()
             local veh = GetVehiclePedIsIn(playerPed, false)
-    
+
             if veh ~= 0 then
                 timeout = 500
                 local terrain = isOnSandOrMountain()
                 DebugPrint(terrain)
                 applyTerrainEffects(veh, terrain)
-    
+
                 local vehicleClass = GetVehicleClass(veh)
                 local hasOffroadTyres = hasOffroadTires(veh)
-    
+
                 if isNormalCar(vehicleClass) and not hasOffroadTyres then
                     limitSpeed(veh, terrain)
                 end
-    
+
                 -- if terrain == "sand" or terrain == "mountain" then
                 --     local multiplier = getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
                 --     SetVehicleEngineTorqueMultiplier(veh, multiplier)
@@ -1030,11 +1029,11 @@ if Config.EnableCarPhysics then
                 --     SetVehicleEngineTorqueMultiplier(veh, 1.0)
                 -- end
             end
-    
+
             Citizen.Wait(timeout)
         end
     end)
-    
+
     function getTerrainEffectMultiplier(vehicleClass, terrain, hasOffroadTyres)
         local multiplier = 1.0
 
@@ -1057,5 +1056,5 @@ if Config.EnableCarPhysics then
         end
 
         return multiplier
-    end    
+    end
 end

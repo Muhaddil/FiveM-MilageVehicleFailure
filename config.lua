@@ -20,7 +20,7 @@ Config.damageMultiplier = 5             -- Damage multiplier applied to the engi
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 Config.AutoRunSQL = true
 Config.AutoVersionChecker = true
-Config.FrameWork = "esx"                -- Only compatible with esx or qb (for the moment)
+Config.FrameWork = "esx" -- Only compatible with esx or qb (for the moment)
 Config.UseOXNotifications = true
 
 -- Setting to use external mileage system (config your own external system if you have one in server.lua line 34)
@@ -28,14 +28,14 @@ Config.UseExternalMileageSystem = false
 
 -- Config for the vehicle physics in harsh terrains
 Config.EnableCarPhysics = true
-Config.MaxSpeed = 40            -- In KM/hours
-Config.CarPhysicsTimeout = 2500 -- In milliseconds
-Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
-Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
-Config.TractionBonus = 0.2      -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
+Config.MaxSpeed = 40             -- In KM/hours
+Config.CarPhysicsTimeout = 2500  -- In milliseconds
+Config.CarSinking = false        -- Works but it's as little bit buggy, not a great implementation
+Config.reductionFactor = 0.1     -- How fast the vehicles brake on sand/grass
+Config.TractionBonus = 0.2       -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
 Config.BrakeTemperaturaGain = 35 -- How much heat is applied to the brakes every 1.5 seconds
-Config.MaxBrakeTemp = 500 -- The max temperatura the brakes can handle before giving out
-Config.CoolingRate = 1 -- How fast the brakes cool down
+Config.MaxBrakeTemp = 500        -- The max temperatura the brakes can handle before giving out
+Config.CoolingRate = 1           -- How fast the brakes cool down
 
 -- Types of breakdowns
 Config.BreakdownTypes = {
@@ -321,7 +321,8 @@ Config.BreakdownTypes = {
             -- TriggerEvent('realistic-vehicle:hoodLatchFailureFlag', vehicle, true)
 
             if Config.ShowNotifications then
-                TriggerEvent('SendNotification', '', "¡El capó de tu vehículo se ha abierto debido a un fallo en los seguros!", 5000, "error")
+                TriggerEvent('SendNotification', '',
+                    "¡El capó de tu vehículo se ha abierto debido a un fallo en los seguros!", 5000, "error")
             end
 
             -- To set if the hood closes on its own when a timeout finishes
@@ -348,7 +349,8 @@ Config.BreakdownTypes = {
             end
 
             if Config.ShowNotifications then
-                TriggerEvent('SendNotification', '', "¡Una de las puertas de tu vehículo se ha soltado y se ha caído!", 5000, "error")
+                TriggerEvent('SendNotification', '', "¡Una de las puertas de tu vehículo se ha soltado y se ha caído!",
+                    5000, "error")
             end
         end
     },
