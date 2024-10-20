@@ -16,6 +16,7 @@ local originalTractionLossMult = nil
 local originalTractionCurveMin = nil
 local originalLowSpeedTractionLossMult = nil
 local lastVehicle = nil
+local lastVehicle2 = nil
 local damageMultiplier = Config.damageMultiplier
 local checkInterval2 = Config.CheckIntervalEngineDamage
 local previousSpeed = 0
@@ -25,7 +26,6 @@ local brakeTemperature = 0
 local maxBrakeTemperature = Config.MaxBrakeTemp
 local isBrakeOverheated = false
 local coolingRate = Config.CoolingRate
-local checkInterval3 = 1500
 local originalBrakeForce = nil
 local originalHandbrakeForce = nil
 
@@ -382,12 +382,24 @@ function ApplyEngineDamage(vehicle, damageAmount)
             newPetrolTankHealth = -4000
         end
 
-        SetDisableVehicleEngineFires(vehicle, true)
-        SetDisableVehiclePetrolTankFires(vehicle, true)
-        SetVehicleCanEngineOperateOnFire(vehicle, true)
-        SetVehicleEngineHealth(vehicle, newEngineHealth)
-        SetVehicleBodyHealth(vehicle, newHealthBody)
-        SetVehiclePetrolTankHealth(vehicle, newPetrolTankHealth)
+        if Config.ApplyDamageAll == true then
+            SetDisableVehiclePetrolTankFires(vehicle, true)
+            SetVehicleCanLeakPetrol(vehicle, true)
+            SetVehiclePetrolTankHealth(vehicle, newPetrolTankHealth)
+            SetDisableVehicleEngineFires(vehicle, true)
+            SetVehicleCanEngineOperateOnFire(vehicle, true)
+            SetVehicleEngineHealth(vehicle, newEngineHealth)
+            SetVehicleBodyHealth(vehicle, newHealthBody)
+        elseif Config.ApplyDamageAll == false then
+            SetDisableVehiclePetrolTankFires(vehicle, true)
+            SetVehicleCanLeakPetrol(vehicle, false)
+            SetVehiclePetrolTankHealth(vehicle, 1000)
+            SetDisableVehicleEngineFires(vehicle, true)
+            SetVehicleCanEngineOperateOnFire(vehicle, true)
+            SetVehicleEngineHealth(vehicle, newEngineHealth)
+            SetVehicleBodyHealth(vehicle, 1000)
+        end
+
 
         if newEngineHealth <= -4000 then
             SetVehicleEngineOn(vehicle, false, true)
@@ -857,9 +869,9 @@ if Config.EnableCarPhysics then
         local maxSpeedMs = maxSpeedKmH / 3.6
         local currentSpeedMs = GetEntitySpeed(vehicle)
 
-        -- DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
-        -- DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
-        -- DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
+        DebugPrint("Current Speed: " .. currentSpeedMs .. " m/s")
+        DebugPrint("Max Speed: " .. maxSpeedMs .. " m/s")
+        DebugPrint("Speed Limit Active: " .. tostring(speedLimitActive))
 
         if terrain == "sand" or terrain == "mountain" then
             if currentSpeedMs > maxSpeedMs then
@@ -917,39 +929,94 @@ if Config.EnableCarPhysics then
         return normalVehicleClasses[vehicleClass] ~= nil
     end
 
-    local function manageBrakeTemperature(vehicle)
-        if vehicle ~= lastVehicle then
+    local defaultConfig = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 600, CoolingRate = 1.5 }
+
+    local function manageBrakeTemperature()
+        local playerPed = PlayerPedId()
+        local vehicle = GetVehiclePedIsIn(playerPed, false)
+
+        if vehicle ~= lastVehicle2 then
             originalBrakeForce = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce")
             originalHandbrakeForce = GetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce")
-            print(originalBrakeForce, originalHandbrakeForce)
-            lastVehicle = vehicle
+            DebugPrint(originalBrakeForce, originalHandbrakeForce)
+
+            local vehicleClass = GetVehicleClass(vehicle)
+            DebugPrint(vehicleClass)
+            local config = Config.ClassConfigs[vehicleClass] or defaultConfig
+
+            brakeTemperaturaGain = config.BrakeTemperaturaGain
+            maxBrakeTemperature = config.MaxBrakeTemp
+            coolingRate = config.CoolingRate
+
+            lastVehicle2 = vehicle
+            brakeTemperature = 0
+        end
+
+        if brakeTemperature < 0 then
             brakeTemperature = 0
         end
 
         local speed = GetEntitySpeed(vehicle) * 3.6
+        DebugPrint("Temperatura del freno: " .. brakeTemperature)
 
-        if speed > 5 then
-            local brakePressure = GetVehicleWheelBrakePressure(vehicle, 0)
+        local wheelNumber = GetVehicleNumberOfWheels(vehicle)
+        local allWheelsInAir = true
 
-            if brakePressure > 0.1 then
-                brakeTemperature = brakeTemperature + Config.BrakeTemperaturaGain
+        for i = 0, wheelNumber - 1 do
+            local wheelSpeed = GetVehicleWheelSpeed(vehicle, i)
+            local wheelSpeedInKM = wheelSpeed * 3.6
+
+            if wheelSpeedInKM > 1 or wheelSpeedInKM < -1 then
+                allWheelsInAir = false
+                break
             end
-            print(brakeTemperature)
+        end
 
-            if brakeTemperature >= maxBrakeTemperature then
-                isBrakeOverheated = true
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.0)
-                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", 0.0)
-                SetVehicleBrakeLights(vehicle, false)
-                brakeTemperature = brakeTemperature - coolingRate * 5
-            else
-                if isBrakeOverheated then
-                    SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
-                    SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
-                    brakeTemperature = brakeTemperature - coolingRate * 5
-                    isBrakeOverheated = false
+        if not allWheelsInAir then
+            if speed > 5 then
+                local totalBrakePressure = 0
+                local validWheels = 0
+
+                for i = 0, wheelNumber - 1 do
+                    local brakePressure = GetVehicleWheelBrakePressure(vehicle, i)
+
+                    if brakePressure > 0.1 then
+                        totalBrakePressure = totalBrakePressure + brakePressure
+                        validWheels = validWheels + 1
+                    end
                 end
 
+                if validWheels > 0 then
+                    local averageBrakePressure = totalBrakePressure / validWheels
+                    DebugPrint("Presión promedio de frenos: " .. averageBrakePressure)
+
+                    if averageBrakePressure > 0.1 then
+                        brakeTemperature = brakeTemperature + brakeTemperaturaGain
+                    end
+                end
+
+                if brakeTemperature >= maxBrakeTemperature then
+                    isBrakeOverheated = true
+                    SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.0)
+                    SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", 0.0)
+                    SetVehicleBrakeLights(vehicle, false)
+                    brakeTemperature = brakeTemperature - coolingRate * 5
+                else
+                    if isBrakeOverheated then
+                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
+                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
+                        brakeTemperature = brakeTemperature - coolingRate * 5
+                        isBrakeOverheated = false
+                    end
+
+                    if brakeTemperature > 0 and brakeTemperature < maxBrakeTemperature then
+                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
+                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
+                        isBrakeOverheated = false
+                        brakeTemperature = brakeTemperature - coolingRate
+                    end
+                end
+            else
                 if brakeTemperature > 0 and brakeTemperature < maxBrakeTemperature then
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
@@ -959,7 +1026,9 @@ if Config.EnableCarPhysics then
             end
         else
             if brakeTemperature > 0 then
-                brakeTemperature = math.max(0, brakeTemperature - coolingRate)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
+                brakeTemperature = brakeTemperature - coolingRate
             end
         end
     end
@@ -982,24 +1051,11 @@ if Config.EnableCarPhysics then
                 if isNormalCar(vehicleClass) or isEmergencyVehicle and not hasOffroadTyres then
                     limitSpeed(veh, terrain)
                 end
+
+                manageBrakeTemperature()
             end
 
             Citizen.Wait(timeout)
-        end
-    end)
-
-    Citizen.CreateThread(function()
-        while true do
-            checkInterval3 = 5000
-
-            local playerPed = GetPlayerPed(-1)
-            local vehicle = GetVehiclePedIsIn(playerPed, false)
-
-            if vehicle and IsVehicleOnAllWheels(vehicle) then
-                manageBrakeTemperature(vehicle)
-                checkInterval3 = 500
-            end
-            Citizen.Wait(checkInterval3)
         end
     end)
 

@@ -17,6 +17,7 @@ Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 108000
 Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
 Config.preventVehicleFlip = true        -- Disable flipping overturned cars
 Config.damageMultiplier = 5             -- Damage multiplier applied to the engine in each crash
+Config.ApplyDamageAll = false           -- If the ApplyEngineDamage function applies the damage to the engine only or to engine/petroltank/body.
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 Config.AutoRunSQL = true
 Config.AutoVersionChecker = true
@@ -28,14 +29,37 @@ Config.UseExternalMileageSystem = false
 
 -- Config for the vehicle physics in harsh terrains
 Config.EnableCarPhysics = true
-Config.MaxSpeed = 40             -- In KM/hours
-Config.CarPhysicsTimeout = 2500  -- In milliseconds
-Config.CarSinking = false        -- Works but it's as little bit buggy, not a great implementation
-Config.reductionFactor = 0.1     -- How fast the vehicles brake on sand/grass
-Config.TractionBonus = 0.2       -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
-Config.BrakeTemperaturaGain = 35 -- How much heat is applied to the brakes every 1.5 seconds
-Config.MaxBrakeTemp = 500        -- The max temperatura the brakes can handle before giving out
-Config.CoolingRate = 1           -- How fast the brakes cool down
+Config.MaxSpeed = 40            -- In KM/hours
+Config.CarPhysicsTimeout = 2500 -- In milliseconds
+Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
+Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
+Config.TractionBonus = 0.2      -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
+
+Config.ClassConfigs = {
+    [0]  = { BrakeTemperaturaGain = 15, MaxBrakeTemp = 550, CoolingRate = 1.1 },  -- Compacts
+    [1]  = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 600, CoolingRate = 1.0 },  -- Sedans
+    [2]  = { BrakeTemperaturaGain = 25, MaxBrakeTemp = 650, CoolingRate = 1.05 }, -- SUVs
+    [3]  = { BrakeTemperaturaGain = 30, MaxBrakeTemp = 700, CoolingRate = 1.0 },  -- Coupes
+    [4]  = { BrakeTemperaturaGain = 35, MaxBrakeTemp = 800, CoolingRate = 0.8 },  -- Muscle
+    [5]  = { BrakeTemperaturaGain = 40, MaxBrakeTemp = 900, CoolingRate = 0.7 },  -- Sports Classics
+    [6]  = { BrakeTemperaturaGain = 45, MaxBrakeTemp = 950, CoolingRate = 1.3 },  -- Sports
+    [7]  = { BrakeTemperaturaGain = 50, MaxBrakeTemp = 1000, CoolingRate = 1.6 }, -- Super
+    [8]  = { BrakeTemperaturaGain = 10, MaxBrakeTemp = 500, CoolingRate = 1.5 },  -- Motorcycles
+    [9]  = { BrakeTemperaturaGain = 50, MaxBrakeTemp = 1100, CoolingRate = 0.4 }, -- Off-road
+    [10] = { BrakeTemperaturaGain = 55, MaxBrakeTemp = 1200, CoolingRate = 0.3 }, -- Industrial
+    [11] = { BrakeTemperaturaGain = 35, MaxBrakeTemp = 800, CoolingRate = 1.0 },  -- Utility
+    [12] = { BrakeTemperaturaGain = 30, MaxBrakeTemp = 750, CoolingRate = 1.2 },  -- Vans
+    [13] = { BrakeTemperaturaGain = 5, MaxBrakeTemp = 450, CoolingRate = 2.5 },   -- Cycles
+    [14] = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 550, CoolingRate = 1.8 },  -- Boats
+    [15] = { BrakeTemperaturaGain = 60, MaxBrakeTemp = 1300, CoolingRate = 0.4 }, -- Helicopters
+    [16] = { BrakeTemperaturaGain = 65, MaxBrakeTemp = 1400, CoolingRate = 0.3 }, -- Planes
+    [17] = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 600, CoolingRate = 1.6 },  -- Service
+    [18] = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 650, CoolingRate = 1.5 },  -- Emergency
+    [19] = { BrakeTemperaturaGain = 25, MaxBrakeTemp = 700, CoolingRate = 1.5 },  -- Military
+    [20] = { BrakeTemperaturaGain = 70, MaxBrakeTemp = 1500, CoolingRate = 0.2 }, -- Commercial
+    [21] = { BrakeTemperaturaGain = 80, MaxBrakeTemp = 1600, CoolingRate = 0.1 }, -- Trains
+    [22] = { BrakeTemperaturaGain = 50, MaxBrakeTemp = 900, CoolingRate = 0.6 },  -- Open Wheel
+}
 
 -- Types of breakdowns
 Config.BreakdownTypes = {
