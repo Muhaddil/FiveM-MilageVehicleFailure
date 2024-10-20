@@ -713,7 +713,7 @@ if Config.EnableCarPhysics then
         local veh = GetVehiclePedIsIn(playerPed, false)
         local groundHash = GetGroundHash(veh)
 
-        print(groundHash)
+        DebugPrint(groundHash)
 
         local sandHashes = {
             1635937914, -1885547121, -1595148316, 510490462,
@@ -1130,6 +1130,10 @@ if Config.EnableCarPhysics then
                 end
 
                 manageBrakeTemperature()
+            else
+                SendNUIMessage({
+                    type = "hideWarning",
+                })        
             end
 
             Citizen.Wait(timeout)
@@ -1145,7 +1149,7 @@ if Config.EnableCarPhysics then
             if veh ~= 0 then
                 timeout = 500
                 local terrain = isOnSandOrMountain()
-                print(terrain)
+                DebugPrint(terrain)
                 applyTerrainEffects(veh, terrain)
 
                 local vehicleClass = GetVehicleClass(veh)
