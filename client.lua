@@ -177,6 +177,11 @@ local function hideNUI()
     })
 end
 
+local function isVehicleOwned(plate)
+    local isOwned = lib.callback.await("realistic-vehicle:isVehOwned", false, plate)
+    return isOwned or false
+end
+
 -- Main thread to update kilometers and handle breakdowns
 Citizen.CreateThread(function()
     while true do
@@ -188,6 +193,13 @@ Citizen.CreateThread(function()
         if vehicle ~= 0 then
             local plate = GetVehicleNumberPlateText(vehicle)
             local currentCoords = GetEntityCoords(playerPed)
+
+            -- Verificar si el vehículo no tiene dueño
+            if not isVehicleOwned(plate) then
+                DebugPrint('Vehículo no es de nadie, no se actualizarán los kilómetros')
+                goto continueLoop
+            end
+
             if isVehicleExcluded(plate) or isVehicleExcludedPrefix(plate) then
                 DebugPrint('Vehículo excluido')
                 goto continueLoop

@@ -75,7 +75,28 @@ end)
 lib.callback.register("realistic-vehicle:get-mileage-JG", function(_, plate)
     local distance, unit = exports["jg-vehiclemileage"]:GetMileage(plate)
     return { mileage = distance, unit = unit }
-  end)
+end)
+
+lib.callback.register("realistic-vehicle:isVehOwned", function(_, plate)
+    local isOwned = false
+
+    if Config.FrameWork == "esx" then
+        local result = MySQL.Sync.fetchAll("SELECT * FROM " .. ESX.VehiclesTable .. " WHERE plate = @plate", {
+            ['@plate'] = plate
+        })
+        
+        isOwned = #result > 0
+
+    elseif Config.FrameWork == "qb" then
+        local result = MySQL.Sync.fetchAll("SELECT * FROM " .. QBCore.VehiclesTable .. " WHERE plate = @plate", {
+            ['@plate'] = plate
+        })
+
+        isOwned = #result > 0
+    end
+
+    return isOwned
+end)
 
 if Config.DebugMode then
     RegisterServerEvent('realistic-vehicle:testBreakdown')
@@ -99,23 +120,24 @@ end)
 
 if Config.AutoRunSQL then
     if not pcall(function()
-      local fileName = "InstallSQL.sql"
-      local file = assert(io.open(GetResourcePath(GetCurrentResourceName()) .. "/" .. fileName, "rb"))
-      local sql = file:read("*all")
-      file:close()
+            local fileName = "InstallSQL.sql"
+            local file = assert(io.open(GetResourcePath(GetCurrentResourceName()) .. "/" .. fileName, "rb"))
+            local sql = file:read("*all")
+            file:close()
 
-      MySQL.query.await(sql)
-    end) then
-      print("^1[SQL ERROR] There was an error while automatically running the required SQL. Don't worry, you just need to run the SQL file. If you've already ran the SQL code previously, and this error is annoying you, set Config.AutoRunSQL = false^0")
+            MySQL.query.await(sql)
+        end) then
+        print(
+        "^1[SQL ERROR] There was an error while automatically running the required SQL. Don't worry, you just need to run the SQL file. If you've already ran the SQL code previously, and this error is annoying you, set Config.AutoRunSQL = false^0")
     end
-  end
+end
 
 -- Función para calcular la diferencia en días
 local function daysAgo(dateStr)
     local year, month, day = dateStr:match("(%d+)-(%d+)-(%d+)")
-    local releaseTime = os.time({year = year, month = month, day = day})
+    local releaseTime = os.time({ year = year, month = month, day = day })
     local currentTime = os.time()
-    local difference = os.difftime(currentTime, releaseTime) / (60 * 60 * 24)  -- Diferencia en días
+    local difference = os.difftime(currentTime, releaseTime) / (60 * 60 * 24) -- Diferencia en días
     return math.floor(difference)
 end
 
@@ -203,25 +225,26 @@ if Config.AutoVersionChecker then
 
                 if latestVersion ~= currentVersion then
                     print('╭────────────────────────────────────────────────────╮')
-                    printCentered('[FiveM-MilageVehicleFailure] - New Version Available', boxWidth, '34')  -- Blue
-                    printWrapped('Current version: ' .. currentVersion, boxWidth, '32')  -- Green
-                    printWrapped('Latest version: ' .. latestVersion, boxWidth, '33')  -- Yellow
-                    printWrapped('Released: ' .. formattedDate, boxWidth, '33')  -- Yellow
-                    printWrapped('Notes: ' .. shortenedNotes, boxWidth, '33')  -- Yellow
-                    printWrapped('Download: ' .. shortenedUrl, boxWidth, '32')  -- Green
+                    printCentered('[FiveM-MilageVehicleFailure] - New Version Available', boxWidth, '34') -- Blue
+                    printWrapped('Current version: ' .. currentVersion, boxWidth, '32')                   -- Green
+                    printWrapped('Latest version: ' .. latestVersion, boxWidth, '33')                     -- Yellow
+                    printWrapped('Released: ' .. formattedDate, boxWidth, '33')                           -- Yellow
+                    printWrapped('Notes: ' .. shortenedNotes, boxWidth, '33')                             -- Yellow
+                    printWrapped('Download: ' .. shortenedUrl, boxWidth, '32')                            -- Green
                     print('╰────────────────────────────────────────────────────╯')
                 else
                     print('╭────────────────────────────────────────────────────╮')
-                    printWrapped('[FiveM-MilageVehicleFailure] - Up-to-date', boxWidth, '32')  -- Green
-                    printWrapped('Current version: ' .. currentVersion, boxWidth, '32')  -- Green
+                    printWrapped('[FiveM-MilageVehicleFailure] - Up-to-date', boxWidth, '32') -- Green
+                    printWrapped('Current version: ' .. currentVersion, boxWidth, '32')       -- Green
                     print('╰────────────────────────────────────────────────────╯')
                 end
             else
-                printWithColor('[FiveM-MilageVehicleFailure] - Error: The JSON structure is not as expected.', '31')  -- Red
-                printWithColor('GitHub API Response: ' .. response, '31')  -- Red
+                printWithColor('[FiveM-MilageVehicleFailure] - Error: The JSON structure is not as expected.', '31') -- Red
+                printWithColor('GitHub API Response: ' .. response, '31')                                            -- Red
             end
         else
-            printWithColor('[FiveM-MilageVehicleFailure] - Failed to check for latest version. Status code: ' .. statusCode, '31')  -- Red
+            printWithColor(
+            '[FiveM-MilageVehicleFailure] - Failed to check for latest version. Status code: ' .. statusCode, '31')                -- Red
         end
     end, 'GET')
 end
