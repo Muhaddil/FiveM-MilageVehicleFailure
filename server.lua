@@ -4,8 +4,10 @@ local githubApiUrl = 'https://api.github.com/repos/' .. resourceName .. '/releas
 
 if Config.FrameWork == "esx" then
     ESX = exports['es_extended']:getSharedObject()
+    ESX.VehiclesTable = "owned_vehicles"
 elseif Config.FrameWork == "qb" then
     QBCore = exports['qb-core']:GetCoreObject()
+    QBCore.VehiclesTable = "player_vehicles"
 end
 
 if Config.FrameWork == "esx" then
@@ -69,6 +71,11 @@ AddEventHandler('realistic-vehicle:updateKilometers', function(plate, kilometers
             ['@kilometers'] = kilometers
         })
 end)
+
+lib.callback.register("realistic-vehicle:get-mileage-JG", function(_, plate)
+    local distance, unit = exports["jg-vehiclemileage"]:GetMileage(plate)
+    return { mileage = distance, unit = unit }
+  end)
 
 if Config.DebugMode then
     RegisterServerEvent('realistic-vehicle:testBreakdown')

@@ -1,0 +1,50 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Lato", sans-serif;
+    background: none;
+}
+
+.distance-display {
+    display: none;
+    gap: 8px;
+    padding: 12px 18px;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    background: linear-gradient(145deg, #0d0d0d, #343434);
+    border: 2px solid #222;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    border-radius: 50px;
+    color: #e0e0e0;
+    font-weight: 600;
+    font-size: 18px;
+    opacity: 0.95;
+    transition: transform 0.4s ease, opacity 0.3s ease;
+    user-select: none;
+}
+
+.distance-value {
+    font-size: 26px;
+    font-weight: bold;
+    color: #76c7c0;
+    letter-spacing: 1px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.distance-unit {
+    font-size: 16px;
+    color: #a9a9a9;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.distance-display:hover {
+    transform: scale(1.05);
+    opacity: 1;
+}
+

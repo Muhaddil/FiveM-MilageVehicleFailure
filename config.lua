@@ -1,7 +1,7 @@
 Config = {}
 
 -- Debugging mode
-Config.DebugMode = true
+Config.DebugMode = false
 Config.ShowNotifications = true
 
 -- Optimal configuration for debugging
@@ -11,21 +11,23 @@ Config.ShowNotifications = true
 
 Config.CheckInterval = 10000            -- Cooldown in milliseconds
 Config.KilometerMultiplier = 1.0        -- Multiplier for vehicle mileage accumulation. Set to 1.0 for normal rate, higher values will increase mileage faster, and lower values will decrease mileage accumulation.
-Config.BaseBreakdownChance = 0.01       --Base failure probability per 1000 km
+Config.BaseBreakdownChance = 0.01       -- Base failure probability per 1000 km
 Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
 Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
 Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
 Config.preventVehicleFlip = true        -- Disable flipping overturned cars
 Config.damageMultiplier = 5             -- Damage multiplier applied to the engine in each crash
-Config.ApplyDamageAll = false           -- If the ApplyEngineDamage function applies the damage to the engine only or to engine/petroltank/body.
+Config.ApplyDamageAll = true            -- If the ApplyEngineDamage function applies the damage to the engine only or to engine/petroltank(if Config.ApplyDamagePetrol true)/body.
+Config.ApplyDamagePetrol = false        -- If the ApplyEngineDamage function applies the damage to petroltank, it can cause lots of fires.
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
 Config.AutoRunSQL = true
 Config.AutoVersionChecker = true
 Config.FrameWork = "esx" -- Only compatible with esx or qb (for the moment)
 Config.UseOXNotifications = true
 
--- Setting to use external mileage system (config your own external system if you have one in server.lua line 34)
-Config.UseExternalMileageSystem = false
+-- Setting to use mileages systems (config your own external system if you have one in server.lua line 34)
+Config.MileageSystem = 'default' -- default / jg-vehiclemileage / other
+Config.KMDisplayPosition = 'top-center' -- Available positions for the NUI: 'bottom-right', 'bottom-left', 'top-right', 'top-left', 'bottom-center', 'top-center'
 
 -- Config for the vehicle physics in harsh terrains
 Config.EnableCarPhysics = true
@@ -34,6 +36,7 @@ Config.CarPhysicsTimeout = 2500 -- In milliseconds
 Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
 Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
 Config.TractionBonus = 0.2      -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
+Config.PlayWarningSound = true  -- If play warning sound when the brakes overheats
 
 Config.ClassConfigs = {
     [0]  = { BrakeTemperaturaGain = 15, MaxBrakeTemp = 550, CoolingRate = 1.1 },  -- Compacts
@@ -364,21 +367,26 @@ Config.BreakdownTypes = {
         chance = 0.2,
         duration = 0,
         action = function(vehicle)
-            local doorIndex = math.random(0, 5)
+            local doorCount = GetNumberOfVehicleDoors(vehicle)
 
-            if DoesVehicleHaveDoor(vehicle, doorIndex) then
-                SetVehicleDoorBroken(vehicle, doorIndex, false)
+            if doorCount > 0 then
+                local doorIndex = math.random(0, doorCount - 1)
+
+                if DoesVehicleHaveDoor(vehicle, doorIndex) then
+                    SetVehicleDoorBroken(vehicle, doorIndex, false)
+                    if Config.ShowNotifications then
+                        TriggerEvent('SendNotification', '',
+                            "¡Una de las puertas de tu vehículo se ha soltado y se ha caído!",
+                            5000, "error")
+                    end
+                else
+                    DebugPrint('¡Esa puerta no existe!')
+                end
             else
-                DebugPrint('¡Esa puerta no existe!')
-            end
-
-            if Config.ShowNotifications then
-                TriggerEvent('SendNotification', '', "¡Una de las puertas de tu vehículo se ha soltado y se ha caído!",
-                    5000, "error")
+                DebugPrint('¡Este vehículo no tiene puertas para soltarse!')
             end
         end
     },
-
 }
 
 -- This vehicles will be excluded from the mileage probability of breakdowns

@@ -88,9 +88,8 @@ end
 
 -- Function to load the kilometers of a vehicle from the database
 local function loadKilometers(plate)
-    if Config.UseExternalMileageSystem then
-        -- Trigger a server-side event to get the mileage from the database
-        if Config.FrameWork == "esx" then
+    if Config.FrameWork == "esx" then
+        if Config.MileageSystem == 'other' then
             ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
                 if km then
                     DebugPrint(km)
@@ -99,18 +98,7 @@ local function loadKilometers(plate)
                     vehicleKilometers[plate] = { km = 0 }
                 end
             end, plate)
-        elseif Config.FrameWork == "qb" then
-            QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
-                if km then
-                    DebugPrint(km)
-                    vehicleKilometers[plate] = { km = km }
-                else
-                    vehicleKilometers[plate] = { km = 0 }
-                end
-            end, plate)
-        end
-    else
-        if Config.FrameWork == "esx" then
+        elseif Config.MileageSystem == 'default' then
             ESX.TriggerServerCallback('realistic-vehicle:fetchKilometers', function(km)
                 if km then
                     DebugPrint(km)
@@ -119,7 +107,18 @@ local function loadKilometers(plate)
                     vehicleKilometers[plate] = { km = 0 }
                 end
             end, plate)
-        elseif Config.FrameWork == "qb" then
+        end
+    elseif Config.FrameWork == "qb" then
+        if Config.MileageSystem == 'other' then
+            QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
+                if km then
+                    DebugPrint(km)
+                    vehicleKilometers[plate] = { km = km }
+                else
+                    vehicleKilometers[plate] = { km = 0 }
+                end
+            end, plate)
+        elseif Config.MileageSystem == 'default' then
             QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometers', function(km)
                 if km then
                     DebugPrint(km)
@@ -128,6 +127,16 @@ local function loadKilometers(plate)
                     vehicleKilometers[plate] = { km = 0 }
                 end
             end, plate)
+        end
+    end
+
+    if Config.MileageSystem == 'jg-vehiclemileage' then
+        local data = lib.callback.await("realistic-vehicle:get-mileage-JG", false, plate)
+        -- local distance, unit = exports["jg-vehiclemileage"]:GetMileage(plate)
+        if data then
+            vehicleKilometers[plate] = { km = data.mileage }
+        else
+            vehicleKilometers[plate] = { km = 0 }
         end
     end
 end
@@ -154,6 +163,20 @@ local function isVehicleExcludedPrefix(plate)
     return false
 end
 
+local function showKilometersInNUI(km, position)
+    SendNUIMessage({
+        type = "show",
+        value = km,
+        position = position or "top-center"
+    })
+end
+
+local function hideNUI()
+    SendNUIMessage({
+        type = "hide"
+    })
+end
+
 -- Main thread to update kilometers and handle breakdowns
 Citizen.CreateThread(function()
     while true do
@@ -165,37 +188,15 @@ Citizen.CreateThread(function()
         if vehicle ~= 0 then
             local plate = GetVehicleNumberPlateText(vehicle)
             local currentCoords = GetEntityCoords(playerPed)
-
             if isVehicleExcluded(plate) or isVehicleExcludedPrefix(plate) then
-                DebugPrint('Vehiculo excluido')
+                DebugPrint('Vehículo excluido')
                 goto continueLoop
             end
 
             if vehicleKilometers[plate] == nil then
                 loadKilometers(plate)
             else
-                if Config.UseExternalMileageSystem then
-                    if Config.FrameWork == "esx" then
-                        ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
-                            if km then
-                                DebugPrint(km)
-                                vehicleKilometers[plate] = { km = km }
-                            else
-                                vehicleKilometers[plate] = { km = 0 }
-                            end
-                        end, plate)
-                    elseif Config.FrameWork == "qb" then
-                        QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', function(km)
-                            if km then
-                                DebugPrint(km)
-                                vehicleKilometers[plate] = { km = km }
-                            else
-                                vehicleKilometers[plate] = { km = 0 }
-                            end
-                        end, plate)
-                    end
-                    DebugPrint(vehicleKilometers[plate].km)
-                else
+                if Config.MileageSystem == 'default' then
                     local oldCoords = vehicleKilometers[plate].coords or currentCoords
                     local distance = calculateDistance(oldCoords, currentCoords) / 1000
 
@@ -211,6 +212,34 @@ Citizen.CreateThread(function()
                     end
                     DebugPrint('Guardando kilometros en la DataBase')
                     DebugPrint('KM nuevos: ' .. vehicleKilometers[plate].km)
+                    showKilometersInNUI(vehicleKilometers[plate].km, Config.KMDisplayPosition)
+                elseif Config.MileageSystem == 'other' then
+                    fetchKilometers = function()
+                        local callback = function(km)
+                            if km then
+                                DebugPrint(km)
+                                vehicleKilometers[plate] = { km = km }
+                            else
+                                vehicleKilometers[plate] = { km = 0 }
+                            end
+                            DebugPrint(vehicleKilometers[plate].km)
+                        end
+
+                        if Config.FrameWork == "esx" then
+                            ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', callback, plate)
+                        elseif Config.FrameWork == "qb" then
+                            QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', callback, plate)
+                        end
+                    end
+                    fetchKilometers()
+                elseif Config.MileageSystem == 'jg-vehiclemileage' then
+                    local data = lib.callback.await("realistic-vehicle:get-mileage-JG", false, plate)
+                    if data then
+                        vehicleKilometers[plate] = { km = data.mileage }
+                    else
+                        vehicleKilometers[plate] = { km = 0 }
+                    end
+                    DebugPrint(vehicleKilometers[plate].km)
                 end
 
                 local km = vehicleKilometers[plate].km
@@ -225,6 +254,8 @@ Citizen.CreateThread(function()
                     end
                 end
             end
+        else
+            hideNUI()
         end
         ::continueLoop::
     end
@@ -248,7 +279,6 @@ AddEventHandler('realistic-vehicle:breakdown', function(vehicle)
         end
     end
 end)
-
 
 if Config.DebugMode then
     RegisterCommand('testbreakdown', function()
@@ -385,15 +415,16 @@ function ApplyEngineDamage(vehicle, damageAmount)
         if Config.ApplyDamageAll == true then
             SetDisableVehiclePetrolTankFires(vehicle, true)
             SetVehicleCanLeakPetrol(vehicle, true)
-            SetVehiclePetrolTankHealth(vehicle, newPetrolTankHealth)
+            if Config.ApplyDamagePetrol then
+                SetVehiclePetrolTankHealth(vehicle, newPetrolTankHealth)
+            end
             SetDisableVehicleEngineFires(vehicle, true)
             SetVehicleCanEngineOperateOnFire(vehicle, true)
             SetVehicleEngineHealth(vehicle, newEngineHealth)
             SetVehicleBodyHealth(vehicle, newHealthBody)
         elseif Config.ApplyDamageAll == false then
             SetDisableVehiclePetrolTankFires(vehicle, true)
-            SetVehicleCanLeakPetrol(vehicle, false)
-            SetVehiclePetrolTankHealth(vehicle, 1000)
+            SetVehicleCanLeakPetrol(vehicle, true)
             SetDisableVehicleEngineFires(vehicle, true)
             SetVehicleCanEngineOperateOnFire(vehicle, true)
             SetVehicleEngineHealth(vehicle, newEngineHealth)
@@ -670,11 +701,11 @@ if Config.EnableCarPhysics then
         local veh = GetVehiclePedIsIn(playerPed, false)
         local groundHash = GetGroundHash(veh)
 
-        DebugPrint(groundHash)
+        print(groundHash)
 
         local sandHashes = {
             1635937914, -1885547121, -1595148316, 510490462,
-            -1907520769, -840911308, -356706482
+            -1907520769, -840911308, -356706482, -700658213,
         }
 
         local mountainHashes = {
@@ -931,6 +962,14 @@ if Config.EnableCarPhysics then
 
     local defaultConfig = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 600, CoolingRate = 1.5 }
 
+    function PlaySound(soundFile, soundVolume)
+        SendNUIMessage({
+            transactionType = 'playSound',
+            transactionFile = soundFile,
+            transactionVolume = soundVolume
+        })
+    end
+
     local function manageBrakeTemperature()
         local playerPed = PlayerPedId()
         local vehicle = GetVehiclePedIsIn(playerPed, false)
@@ -972,6 +1011,30 @@ if Config.EnableCarPhysics then
             end
         end
 
+        local isInWater = false
+        for i = 0, wheelNumber - 1 do
+            local wheelPos = GetEntityCoords(vehicle, false)
+            if GetWaterHeight(wheelPos.x, wheelPos.y, wheelPos.z - 0.5) then
+                isInWater = true
+                break
+            end
+        end
+        DebugPrint('Is in water? ' .. tostring(isInWater))
+
+        if brakeTemperature >= 0.80 * maxBrakeTemperature then
+            SendNUIMessage({
+                type = "showWarning",
+            })
+
+            if Config.PlayWarningSound then
+            PlaySound("alert", 1.0)
+            end
+        else
+            SendNUIMessage({
+                type = "hideWarning",
+            })
+        end
+
         if not allWheelsInAir then
             if speed > 5 then
                 local totalBrakePressure = 0
@@ -985,6 +1048,7 @@ if Config.EnableCarPhysics then
                         validWheels = validWheels + 1
                     end
                 end
+
 
                 if validWheels > 0 then
                     local averageBrakePressure = totalBrakePressure / validWheels
@@ -1000,12 +1064,12 @@ if Config.EnableCarPhysics then
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.0)
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", 0.0)
                     SetVehicleBrakeLights(vehicle, false)
-                    brakeTemperature = brakeTemperature - coolingRate * 5
+                    brakeTemperature = brakeTemperature - (isInWater and coolingRate * 20 or coolingRate)
                 else
                     if isBrakeOverheated then
                         SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
                         SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
-                        brakeTemperature = brakeTemperature - coolingRate * 5
+                        brakeTemperature = brakeTemperature - (isInWater and coolingRate * 20 or coolingRate)
                         isBrakeOverheated = false
                     end
 
@@ -1013,7 +1077,7 @@ if Config.EnableCarPhysics then
                         SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
                         SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
                         isBrakeOverheated = false
-                        brakeTemperature = brakeTemperature - coolingRate
+                        brakeTemperature = brakeTemperature - (isInWater and coolingRate * 20 or coolingRate)
                     end
                 end
             else
@@ -1021,17 +1085,18 @@ if Config.EnableCarPhysics then
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
                     isBrakeOverheated = false
-                    brakeTemperature = brakeTemperature - coolingRate
+                    brakeTemperature = brakeTemperature - (isInWater and coolingRate * 20 or coolingRate)
                 end
             end
         else
             if brakeTemperature > 0 then
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
                 SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
-                brakeTemperature = brakeTemperature - coolingRate
+                brakeTemperature = brakeTemperature - (isInWater and coolingRate * 20 or coolingRate)
             end
         end
     end
+
 
     Citizen.CreateThread(function()
         while true do
@@ -1068,7 +1133,7 @@ if Config.EnableCarPhysics then
             if veh ~= 0 then
                 timeout = 500
                 local terrain = isOnSandOrMountain()
-                DebugPrint(terrain)
+                print(terrain)
                 applyTerrainEffects(veh, terrain)
 
                 local vehicleClass = GetVehicleClass(veh)
