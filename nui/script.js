@@ -10,7 +10,6 @@
     meterElement.style.right = "";
     meterElement.style.transform = "";
 
-    // Asegurarnos de que el elemento esté siempre dentro de los márgenes de la pantalla
     const padding = "5%";
 
     switch (position) {
@@ -93,7 +92,7 @@
     }
 });
 
-let currentSound; // Variable para almacenar el sonido actual
+let currentSound;
 
 window.addEventListener("message", (event) => {
     const data = event.data;

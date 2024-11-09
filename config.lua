@@ -1,7 +1,7 @@
 Config = {}
 
 -- Debugging mode
-Config.DebugMode = false
+Config.DebugMode = true
 Config.ShowNotifications = true
 
 -- Optimal configuration for debugging
@@ -14,16 +14,40 @@ Config.KilometerMultiplier = 1.0        -- Multiplier for vehicle mileage accumu
 Config.BaseBreakdownChance = 0.01       -- Base failure probability per 1000 km
 Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
 Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
-Config.SpeedToDamageRatio = 1.0         -- Does nothing | Useless
 Config.preventVehicleFlip = true        -- Disable flipping overturned cars
-Config.damageMultiplier = 5             -- Damage multiplier applied to the engine in each crash
-Config.ApplyDamageAll = true            -- If the ApplyEngineDamage function applies the damage to the engine only or to engine/petroltank(if Config.ApplyDamagePetrol true)/body.
+Config.AutoRunSQL = true                -- If the script should run the SQL file automatically
+Config.AutoVersionChecker = true        -- If the script should search for the latest version and warn you in the console if founds one
+Config.FrameWork = "esx"                -- Only compatible with esx or qb (for the moment)
+Config.UseOXNotifications = true        -- If the script uses the ox_libs notifications or framework ones
+Config.damageMultiplier = 5             -- Damage multiplier (general) applied to the engine in each crash
+Config.ApplyDamageAll = true            -- If the ApplyEngineDamage function applies the damage to the engine only or to engine/petroltank (if Config.ApplyDamagePetrol true)/body.
 Config.ApplyDamagePetrol = false        -- If the ApplyEngineDamage function applies the damage to petroltank, it can cause lots of fires.
 Config.CheckIntervalEngineDamage = 2000 -- Cooldown in milliseconds
-Config.AutoRunSQL = true
-Config.AutoVersionChecker = true
-Config.FrameWork = "esx" -- Only compatible with esx or qb (for the moment)
-Config.UseOXNotifications = true
+Config.ClassDamageMultipliers = {       -- Damage multiplier (specific for each vehicle class) applied to the engine in each crash
+    [0]  = { damageMultiplier = 4.5 },  -- Compacts
+    [1]  = { damageMultiplier = 5.0 },  -- Sedans
+    [2]  = { damageMultiplier = 5.5 },  -- SUVs
+    [3]  = { damageMultiplier = 4.8 },  -- Coupes
+    [4]  = { damageMultiplier = 5.5 },  -- Muscle
+    [5]  = { damageMultiplier = 5.3 },  -- Sports Classics
+    [6]  = { damageMultiplier = 6.0 },  -- Sports
+    [7]  = { damageMultiplier = 6.5 },  -- Super
+    [8]  = { damageMultiplier = 3.0 },  -- Motorcycles
+    [9]  = { damageMultiplier = 5.2 },  -- Off-road
+    [10] = { damageMultiplier = 7.0 },  -- Industrial
+    [11] = { damageMultiplier = 5.5 },  -- Utility
+    [12] = { damageMultiplier = 5.0 },  -- Vans
+    [13] = { damageMultiplier = 2.5 },  -- Cycles
+    [14] = { damageMultiplier = 4.0 },  -- Boats
+    [15] = { damageMultiplier = 8.0 },  -- Helicopters
+    [16] = { damageMultiplier = 9.0 },  -- Planes
+    [17] = { damageMultiplier = 5.0 },  -- Service
+    [18] = { damageMultiplier = 5.0 },  -- Emergency
+    [19] = { damageMultiplier = 6.0 },  -- Military
+    [20] = { damageMultiplier = 7.5 },  -- Commercial
+    [21] = { damageMultiplier = 10.0 }, -- Trains
+    [22] = { damageMultiplier = 5.5 },  -- Open Wheel
+}
 
 -- Setting to use mileages systems (config your own external system if you have one in server.lua line 34)
 Config.MileageSystem = 'default' -- default / jg-vehiclemileage / other

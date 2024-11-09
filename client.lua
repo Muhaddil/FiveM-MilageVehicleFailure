@@ -17,7 +17,7 @@ local originalTractionCurveMin = nil
 local originalLowSpeedTractionLossMult = nil
 local lastVehicle = nil
 local lastVehicle2 = nil
-local damageMultiplier = Config.damageMultiplier
+-- local damageMultiplier = Config.damageMultiplier
 local checkInterval2 = Config.CheckIntervalEngineDamage
 local previousSpeed = 0
 local speedLimitActive = false
@@ -48,7 +48,7 @@ function SendNotification(msgtitle, msg, time, type)
             title = msgtitle,
             description = msg,
             showDuration = true,
-            type = type2,
+            type = type,
             style = {
                 backgroundColor = 'rgba(0, 0, 0, 0.75)',
                 color = 'rgba(255, 255, 255, 1)',
@@ -194,7 +194,6 @@ Citizen.CreateThread(function()
             local plate = GetVehicleNumberPlateText(vehicle)
             local currentCoords = GetEntityCoords(playerPed)
 
-            -- Verificar si el vehículo no tiene dueño
             if not isVehicleOwned(plate) then
                 DebugPrint('Vehículo no es de nadie, no se actualizarán los kilómetros')
                 goto continueLoop
@@ -259,7 +258,7 @@ Citizen.CreateThread(function()
                 local currentTime = GetGameTimer()
                 local lastBreakdownTime = vehicleCooldown[plate] or 0
 
-                if currentTime - lastBreakdownTime >= Config.BreakdownCooldown then
+                if (currentTime - lastBreakdownTime) >= Config.BreakdownCooldown then
                     if math.random() < breakdownChance then
                         TriggerEvent('realistic-vehicle:breakdown', vehicle)
                         vehicleCooldown[plate] = currentTime
@@ -465,6 +464,16 @@ Citizen.CreateThread(function()
             local currentSpeed = GetEntitySpeed(vehicle) * 3.6
             local speedDifference = previousSpeed - currentSpeed
 
+            local vehicleClass = GetVehicleClass(vehicle)
+            local damageMultiplier = Config.damageMultiplier
+
+            if Config.ClassDamageMultipliers[vehicleClass] then
+                damageMultiplier = Config.ClassDamageMultipliers[vehicleClass].damageMultiplier
+                DebugPrint("Multiplicador de daño para la clase " .. vehicleClass .. ": " .. damageMultiplier)
+            else
+                DebugPrint("Clase de vehículo no encontrada, usando multiplicador por defecto.")
+            end
+
             if speedDifference > 50 then
                 local damageAmount = speedDifference * damageMultiplier / 2
                 DebugPrint('Daño al motor: ' .. damageAmount)
@@ -473,6 +482,7 @@ Citizen.CreateThread(function()
 
             previousSpeed = currentSpeed
         end
+
         Citizen.Wait(checkInterval2)
     end
 end)
@@ -497,7 +507,7 @@ if Config.preventVehicleFlip then
             if vehicle ~= 0 and GetPedInVehicleSeat(vehicle, -1) == playerPed then
                 local roll = GetEntityRoll(vehicle)
 
-                if (roll > 75.0 or roll < -75.0) and GetEntitySpeed(vehicle) < 2 then
+                if (roll > 75.0 or roll < -75.0) and GetEntitySpeed(vehicle) < 10 then
                     DisableControlAction(2, 59, true)
                     DisableControlAction(2, 60, true)
                     waitTime = 10
