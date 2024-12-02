@@ -10,7 +10,8 @@ Config.ShowNotifications = true
 -- Config.MaxBreakdownChance = 1.0
 
 Config.CheckInterval = 10000            -- Cooldown in milliseconds
-Config.KilometerMultiplier = 1.0        -- Multiplier for vehicle mileage accumulation. Set to 1.0 for normal rate, higher values will increase mileage faster, and lower values will decrease mileage accumulation.
+Config.KMNUIInterval = 1000             -- Cooldown in milliseconds
+Config.KilometerMultiplier = 5.0        -- Multiplier for vehicle mileage accumulation. Set to 1.0 for normal rate, higher values will increase mileage faster, and lower values will decrease mileage accumulation.
 Config.BaseBreakdownChance = 0.01       -- Base failure probability per 1000 km
 Config.MaxBreakdownChance = 0.5         -- Maximum probability of failure
 Config.BreakdownCooldown = 10800000     -- Cooldown in milliseconds (e.g. 10800000 ms = 3 hours)
@@ -61,7 +62,7 @@ Config.CarSinking = false       -- Works but it's as little bit buggy, not a gre
 Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
 Config.TractionBonus = 0.2      -- Additional traction boost for emergency vehicles, improving grip on rough terrains like sand or grass
 Config.PlayWarningSound = true  -- If play warning sound when the brakes overheats
-
+Config.brakeReductionFactor = 1.0  -- Standard factor for brake reduction; lower values result in more significant reduction based on temperature.
 Config.ClassConfigs = {
     [0]  = { BrakeTemperaturaGain = 15, MaxBrakeTemp = 550, CoolingRate = 1.1 },  -- Compacts
     [1]  = { BrakeTemperaturaGain = 20, MaxBrakeTemp = 600, CoolingRate = 1.0 },  -- Sedans
@@ -159,7 +160,7 @@ Config.BreakdownTypes = {
     },
     {
         name = "PetrolLoss",
-        chance = 1.6,
+        chance = 0.6,
         duration = 25000,
         action = function(vehicle)
             -- SetVehicleFuelLevel(vehicle, currentFuelLevel - 10.0)
@@ -411,6 +412,21 @@ Config.BreakdownTypes = {
             end
         end
     },
+    {
+        name = "EngineFire",
+        chance = 10.2,
+        action = function(vehicle)
+            SetVehicleEngineOn(vehicle, false, true, true)
+            local vehicleEntity = NetworkGetEntityFromNetworkId(NetworkGetNetworkIdFromEntity(vehicle))
+            StartEntityFire(vehicleEntity)
+            if Config.ShowNotifications then
+                TriggerEvent('SendNotification', '', "¡El motor de tu vehículo ha prendido fuego, corre!", 5000, "error")
+            end
+            SetVehicleEngineHealth(vehicle, -4000)
+            Wait(15000)
+            NetworkExplodeVehicle(vehicle, true, false)
+        end
+    },    
 }
 
 -- This vehicles will be excluded from the mileage probability of breakdowns

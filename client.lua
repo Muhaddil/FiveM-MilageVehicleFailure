@@ -1049,7 +1049,7 @@ if Config.EnableCarPhysics then
             })
 
             if Config.PlayWarningSound then
-            PlaySound("alert", 1.0)
+                PlaySound("alert", 1.0)
             end
         else
             SendNUIMessage({
@@ -1080,7 +1080,18 @@ if Config.EnableCarPhysics then
                         brakeTemperature = brakeTemperature + brakeTemperaturaGain
                     end
                 end
-
+    
+                local brakeReductionFactor = Config.brakeReductionFactor * 2
+    
+                if brakeTemperature >= maxBrakeTemperature then
+                    brakeReductionFactor = 0.0
+                elseif brakeTemperature > 0 then
+                    brakeReductionFactor = Config.brakeReductionFactor * 2 - (brakeTemperature / maxBrakeTemperature)
+                end
+    
+                local adjustedBrakeForce = originalBrakeForce * brakeReductionFactor
+                local adjustedHandbrakeForce = originalHandbrakeForce * brakeReductionFactor
+    
                 if brakeTemperature >= maxBrakeTemperature then
                     isBrakeOverheated = true
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.0)
@@ -1096,8 +1107,8 @@ if Config.EnableCarPhysics then
                     end
 
                     if brakeTemperature > 0 and brakeTemperature < maxBrakeTemperature then
-                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", originalBrakeForce)
-                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", originalHandbrakeForce)
+                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", adjustedBrakeForce)
+                        SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", adjustedHandbrakeForce)
                         isBrakeOverheated = false
                         brakeTemperature = brakeTemperature - (isInWater and coolingRate * 20 or coolingRate)
                     end
