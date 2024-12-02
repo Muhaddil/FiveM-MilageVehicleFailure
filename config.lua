@@ -414,7 +414,7 @@ Config.BreakdownTypes = {
     },
     {
         name = "EngineFire",
-        chance = 10.2,
+        chance = 0.2,
         action = function(vehicle)
             SetVehicleEngineOn(vehicle, false, true, true)
             local vehicleEntity = NetworkGetEntityFromNetworkId(NetworkGetNetworkIdFromEntity(vehicle))
