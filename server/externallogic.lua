@@ -2,7 +2,6 @@ local currentVersion = GetResourceMetadata(GetCurrentResourceName(), 'version')
 local resourceName = 'Muhaddil/FiveM-MilageVehicleFailure'
 local githubApiUrl = 'https://api.github.com/repos/' .. resourceName .. '/releases/latest'
 
-
 if Config.AutoRunSQL then
     if not pcall(function()
             local fileName = "InstallSQL.sql"

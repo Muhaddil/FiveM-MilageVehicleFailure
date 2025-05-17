@@ -4,7 +4,7 @@
 
 ![FiveM-MilageVehicleFailure](https://i.ibb.co/hHvxfx8/Five-M-Milage-Vehicle-Failure.png)
 
-The FiveM Vehicle Breakdown Script adds a dynamic vehicle breakdown system to your FiveM server. This script introduces random vehicle malfunctions based on the number of kilometers driven. The malfunctions include engine failures, tire bursts, power loss and more! It also features a debug mode for easier testing and adjustment.
+The FiveM Vehicle Breakdown Script introduces a dynamic and realistic vehicle malfunction system to your FiveM server. Vehicle failures are triggered based on kilometers driven, simulating real-world wear and tear. The script is highly configurable, supports both ESX and QBCore frameworks, and includes a debug mode for easy testing.
 
 ## Features
 
