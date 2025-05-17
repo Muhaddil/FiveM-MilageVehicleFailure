@@ -1,7 +1,7 @@
 Config = {}
 
 -- Debugging mode
-Config.DebugMode = true
+Config.DebugMode = false
 Config.ShowNotifications = true
 
 -- Optimal configuration for debugging
