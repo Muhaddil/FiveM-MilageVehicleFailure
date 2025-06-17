@@ -41,7 +41,7 @@ elseif Config.FrameWork == "qb" then
     end)
 
     QBCore.Functions.CreateCallback('realistic-vehicle:fetchKilometersFromDB', function(source, cb, plate)
-        MySQL.Async.fetchScalar('SELECT adv_stats FROM owned_vehicles WHERE plate = @plate', {
+        MySQL.Async.fetchScalar('SELECT adv_stats FROM player_vehicles WHERE plate = @plate', {
             ['@plate'] = plate
         }, function(adv_stats)
             if adv_stats then
@@ -80,9 +80,8 @@ lib.callback.register("realistic-vehicle:isVehOwned", function(_, plate)
         local result = MySQL.Sync.fetchAll("SELECT * FROM " .. ESX.VehiclesTable .. " WHERE plate = @plate", {
             ['@plate'] = plate
         })
-        
-        isOwned = #result > 0
 
+        isOwned = #result > 0
     elseif Config.FrameWork == "qb" then
         local result = MySQL.Sync.fetchAll("SELECT * FROM " .. QBCore.VehiclesTable .. " WHERE plate = @plate", {
             ['@plate'] = plate
