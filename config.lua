@@ -440,3 +440,41 @@ Config.ExcludedPrefixes = {
     "LSSD",
     "AMB",
 }
+
+Config.MantenimientoPreventivo = true
+Config.KmParaMantenimiento = 500
+Config.CostoMantenimiento = 1000
+Config.FallosProgresivos = {
+    [100] = { rpmMax = 0.7, notification = "Reducción de potencia detectada" },
+    [200] = { humo = true, notification = "Humo en el escape - Necesita revisión" },
+    [300] = { apagon = true, notification = "Fallos eléctricos detectados" }
+}
+Config.ResistenciaVehiculos = {
+    [0] = 1.2,   -- Compact
+    [1] = 1.0,   -- Sedan
+    [2] = 1.1,   -- SUV
+    [3] = 0.9,   -- Coupe
+    [4] = 0.8,   -- Muscle
+    [5] = 0.8,   -- Sports Classic
+    [6] = 0.7,   -- Sports
+    [7] = 0.6,   -- Super
+    [8] = 0.7,   -- Motorcycle
+    [9] = 1.0,   -- Off-road
+    [10] = 0.9,  -- Industrial
+    [11] = 0.5,  -- Utility
+    [12] = 1.0,  -- Van
+    [13] = 1.0,  -- Bike
+    [14] = 0.3,  -- Boat
+    [15] = 0.3,  -- Helicopter
+    [16] = 0.3,  -- Plane
+    [17] = 0.8,  -- Service
+    [18] = 0.9,  -- Emergency
+    [19] = 0.7,  -- Military
+    [20] = 0.5   -- Commercial
+}
+Config.PiezasDesgastables = {
+    ["engine"] = { maxKm = 1000, efecto = "reducir_potencia", notification = "Motor desgastado" },
+    ["transmission"] = { maxKm = 800, efecto = "cambios_lentos", notification = "Transmisión defectuosa" },
+    ["tires"] = { maxKm = 500, efecto = "derrapes", notification = "Neumáticos gastados" },
+    ["brakes"] = { maxKm = 600, efecto = "frenos_pobre", notification = "Frenos desgastados" }
+}

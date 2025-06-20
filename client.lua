@@ -28,7 +28,9 @@ local isBrakeOverheated = false
 local coolingRate = Config.CoolingRate
 local originalBrakeForce = nil
 local originalHandbrakeForce = nil
-
+local VehicleStates = {}
+local ActiveSmokeEffects = {}
+local LastMaintenanceNotification = {}
 
 function DebugPrint(...)
     if Config.DebugMode then
@@ -40,6 +42,20 @@ if Config.FrameWork == "esx" then
     ESX = exports['es_extended']:getSharedObject()
 elseif Config.FrameWork == "qb" then
     QBCore = exports['qb-core']:GetCoreObject()
+end
+
+function GetFramework()
+    if ESX then return "esx" end
+    if QBCore then return "qb" end
+    return "unknown"
+end
+
+function TriggerCallback(name, cb, ...)
+    if GetFramework() == "esx" then
+        ESX.TriggerServerCallback(name, cb, ...)
+    elseif GetFramework() == "qb" then
+        QBCore.Functions.TriggerCallback(name, cb, ...)
+    end
 end
 
 function SendNotification(msgtitle, msg, time, type)
@@ -257,6 +273,12 @@ Citizen.CreateThread(function()
                 local breakdownChance = math.min((km / 1000) * Config.BaseBreakdownChance, Config.MaxBreakdownChance)
                 local currentTime = GetGameTimer()
                 local lastBreakdownTime = vehicleCooldown[plate] or 0
+
+                for kmfallos, efectos in pairs(Config.FallosProgresivos) do
+                    if km >= kmfallos then
+                        AplicarEfectos(vehicle, efectos)
+                    end
+                end
 
                 if (currentTime - lastBreakdownTime) >= Config.BreakdownCooldown then
                     if math.random() < breakdownChance then
@@ -1080,18 +1102,18 @@ if Config.EnableCarPhysics then
                         brakeTemperature = brakeTemperature + brakeTemperaturaGain
                     end
                 end
-    
+
                 local brakeReductionFactor = Config.brakeReductionFactor * 2
-    
+
                 if brakeTemperature >= maxBrakeTemperature then
                     brakeReductionFactor = 0.0
                 elseif brakeTemperature > 0 then
                     brakeReductionFactor = Config.brakeReductionFactor * 2 - (brakeTemperature / maxBrakeTemperature)
                 end
-    
+
                 local adjustedBrakeForce = originalBrakeForce * brakeReductionFactor
                 local adjustedHandbrakeForce = originalHandbrakeForce * brakeReductionFactor
-    
+
                 if brakeTemperature >= maxBrakeTemperature then
                     isBrakeOverheated = true
                     SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.0)
@@ -1154,7 +1176,7 @@ if Config.EnableCarPhysics then
             else
                 SendNUIMessage({
                     type = "hideWarning",
-                })        
+                })
             end
 
             Citizen.Wait(timeout)
@@ -1216,3 +1238,252 @@ if Config.EnableCarPhysics then
         return multiplier
     end
 end
+
+Citizen.CreateThread(function()
+    while true do
+        Citizen.Wait(1000)
+        local playerPed = PlayerPedId()
+        if IsPedInAnyVehicle(playerPed, false) then
+            local vehicle = GetVehiclePedIsIn(playerPed, false)
+            local plate = GetVehicleNumberPlateText(vehicle)
+            local class = GetVehicleClass(vehicle)
+            local resistencia = Config.ResistenciaVehiculos[class] or 1.0
+
+            local km = loadKilometers(plate)
+
+            CheckPreventiveMaintenance(vehicle, plate, km)
+
+            ApplyProgressiveFailures(vehicle, km, resistencia)
+
+            ApplyWearPartsEffects(vehicle, km)
+        end
+
+        CleanupEffects()
+    end
+end)
+
+function CheckPreventiveMaintenance(vehicle, plate, km)
+    if not Config.MantenimientoPreventivo then return end
+
+    local kmSinceLastNotify = km - (LastMaintenanceNotification[plate] or 0)
+
+    if km >= Config.KmParaMantenimiento and kmSinceLastNotify > 50 then
+        SendNotification("MANTENIMIENTO REQUERIDO",
+            ("Tu vehículo tiene %d km. Visita un taller para mantenimiento preventivo!"):format(km))
+        LastMaintenanceNotification[plate] = km
+    end
+end
+
+function ApplyProgressiveFailures(vehicle, km, resistencia)
+    if not VehicleStates[vehicle] then
+        VehicleStates[vehicle] = { notificaciones = {} }
+    end
+
+    for kmThreshold, failure in pairs(Config.FallosProgresivos) do
+        local adjustedThreshold = kmThreshold / resistencia
+
+        if km >= adjustedThreshold and not VehicleStates[vehicle].notificaciones[kmThreshold] then
+            if failure.notification then
+                SendNotification("FALLO MECÁNICO", failure.notification)
+            end
+            VehicleStates[vehicle].notificaciones[kmThreshold] = true
+        end
+
+        if km >= adjustedThreshold then
+            if failure.rpmMax then
+                SetVehicleEnginePowerMultiplier(vehicle, failure.rpmMax)
+            end
+
+            if failure.humo and not ActiveSmokeEffects[vehicle] then
+                TriggerSmokeEffect(vehicle)
+            end
+
+            if failure.apagon and math.random() < 0.01 then
+                SetVehicleEngineOn(vehicle, false, true, true)
+                Citizen.Wait(2000)
+                SendNotification("FALLO ELÉCTRICO", "El motor se ha apagado repentinamente")
+            end
+        end
+    end
+end
+
+function ApplyWearPartsEffects(vehicle, km)
+    for pieza, data in pairs(Config.PiezasDesgastables) do
+        if km >= data.maxKm then
+            if not VehicleStates[vehicle][pieza] then
+                SendNotification("DESGASTE", data.notification)
+                VehicleStates[vehicle][pieza] = true
+            end
+
+            if data.efecto == "reducir_potencia" then
+                SetVehicleEnginePowerMultiplier(vehicle, 0.85)
+            elseif data.efecto == "cambios_lentos" then
+                SetVehicleHighGear(vehicle, GetVehicleHighGear(vehicle) - 1)
+            elseif data.efecto == "derrapes" then
+                SetVehicleReduceGrip(vehicle, true)
+            elseif data.efecto == "frenos_pobre" then
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fBrakeForce", 0.3)
+                SetVehicleHandlingFloat(vehicle, "CHandlingData", "fHandBrakeForce", 0.3)
+            end
+        end
+    end
+end
+
+function TriggerSmokeEffect(vehicle)
+    if ActiveSmokeEffects[vehicle] then return end
+
+    ActiveSmokeEffects[vehicle] = true
+    Citizen.CreateThread(function()
+        while DoesEntityExist(vehicle) and ActiveSmokeEffects[vehicle] do
+            if GetIsVehicleEngineRunning(vehicle) and math.random() < 0.3 then
+                local enginePos = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, "engine"))
+                UseParticleFxAssetNextCall("core")
+                local particleHandle = StartParticleFxLoopedAtCoord("ent_ray_heli_aprtmnt_l_fire",
+                    enginePos.x, enginePos.y, enginePos.z + 0.2,
+                    0.0, 0.0, 0.0, 0.5, false, false, false, false)
+
+                PlaySoundFromEntity(-1, "Engine_Failure", vehicle, 0, false, 0)
+                Citizen.Wait(3000)
+                StopParticleFxLooped(particleHandle, 0)
+            end
+            Citizen.Wait(5000)
+        end
+        ActiveSmokeEffects[vehicle] = nil
+    end)
+end
+
+function CleanupEffects()
+    for vehicle, _ in pairs(ActiveSmokeEffects) do
+        if not DoesEntityExist(vehicle) then
+            ActiveSmokeEffects[vehicle] = nil
+        end
+    end
+
+    for vehicle, _ in pairs(VehicleStates) do
+        if not DoesEntityExist(vehicle) then
+            VehicleStates[vehicle] = nil
+        end
+    end
+end
+
+RegisterNetEvent('realistic-vehicle:mantenimiento:realizar')
+AddEventHandler('realistic-vehicle:mantenimiento:realizar', function(vehicle)
+    if not DoesEntityExist(vehicle) then
+        SendNotification("ERROR", "Vehículo no válido.")
+        return
+    end
+
+    local plate = GetVehicleNumberPlateText(vehicle)
+    local kmActual = loadKilometers(plate)
+
+    local function realizarMantenimiento(kmUltimo)
+        local kmDesdeMantenimiento = kmActual - kmUltimo
+
+        if kmDesdeMantenimiento >= Config.KmParaMantenimiento then
+            TriggerServerEvent('realistic-vehicle:quitarDinero', Config.CostoMantenimiento)
+            TriggerServerEvent('realistic-vehicle:guardarMantenimiento', plate, kmActual)
+
+            VehicleStates[vehicle] = nil
+            ActiveSmokeEffects[vehicle] = nil
+
+            SetVehicleEnginePowerMultiplier(vehicle, 1.0)
+            SetVehicleReduceGrip(vehicle, false)
+            SetVehicleFixed(vehicle)
+            SetVehicleDeformationFixed(vehicle)
+            SetVehicleEngineHealth(vehicle, 1000.0)
+
+            LastMaintenanceNotification[plate] = 0
+            SendNotification("MANTENIMIENTO COMPLETADO", "¡Vehículo reparado correctamente!")
+        else
+            SendNotification("INFORMACIÓN", "El vehículo no necesita mantenimiento todavía.")
+        end
+    end
+
+    if Config.FrameWork == "esx" then
+        ESX.TriggerServerCallback('realistic-vehicle:getLastMaintenance', function(kmUltimo)
+            realizarMantenimiento(kmUltimo)
+        end, plate)
+    elseif Config.FrameWork == "qb" then
+        QBCore.Functions.TriggerCallback('realistic-vehicle:getLastMaintenance', function(kmUltimo)
+            realizarMantenimiento(kmUltimo)
+        end, plate)
+    end
+end)
+
+function TriggerEngineFailure(vehicle)
+    if not DoesEntityExist(vehicle) then return end
+
+    local enginePos = GetWorldPositionOfEntityBone(vehicle, GetEntityBoneIndexByName(vehicle, "engine"))
+    UseParticleFxAssetNextCall("core")
+    local particleHandle = StartParticleFxLoopedAtCoord("ent_ray_heli_aprtmnt_l_fire",
+        enginePos.x, enginePos.y, enginePos.z,
+        0.0, 0.0, 0.0, 1.5, false, false, false, false)
+
+    PlaySoundFromEntity(-1, "Engine_Failure", vehicle, 0, false, 0)
+
+    SetVehicleEngineOn(vehicle, false, true, true)
+    SetVehicleEngineHealth(vehicle, -4000)
+
+    Citizen.SetTimeout(5000, function()
+        if DoesEntityExist(vehicle) then
+            StopParticleFxLooped(particleHandle, 0)
+        end
+    end)
+end
+
+exports('RealizarMantenimientoMecanico', function(vehicle)
+    local playerPed = PlayerPedId()
+
+    if not DoesEntityExist(vehicle) or not IsEntityAVehicle(vehicle) then
+        SendNotification("ERROR", "No hay un vehículo válido cerca.")
+        return false
+    end
+
+    local vehCoords = GetEntityCoords(vehicle)
+    local forwardVector = GetEntityForwardVector(vehicle)
+    local capotOffset = 1.5
+
+    local capotPos = vehCoords + forwardVector * capotOffset
+    local heading = GetEntityHeading(vehicle) - 180.0
+
+    TaskGoStraightToCoord(playerPed, capotPos.x, capotPos.y, capotPos.z, 1.0, -1, heading, 0.5)
+    Wait(2000)
+
+    SetEntityHeading(playerPed, heading)
+
+    RequestAnimDict("mini@repair")
+    while not HasAnimDictLoaded("mini@repair") do
+        Wait(10)
+    end
+
+    local success = lib.progressBar({
+        duration = 8000,
+        label = 'Realizando mantenimiento del vehículo...',
+        useWhileDead = false,
+        canCancel = true,
+        disable = {
+            car = true,
+            move = true,
+            combat = true,
+        },
+        anim = {
+            dict = 'mini@repair',
+            clip = 'fixing_a_ped'
+        },
+    })
+
+    ClearPedTasks(playerPed)
+
+    if not success then
+        SendNotification("CANCELADO", "El mantenimiento fue cancelado.")
+        return false
+    end
+
+    TriggerEvent('realistic-vehicle:mantenimiento:realizar', vehicle)
+
+    return true
+end)
+
+-- Example usage:
+-- local vehicle = GetVehiclePedIsIn(PlayerPedId(), true)
+-- exports['FiveM-MilageVehicleFailure']:RealizarMantenimientoMecanico(vehicle)

@@ -112,3 +112,33 @@ AddEventHandler('vehicle:damageStatus', function()
         args = { 'Sistema de Daño', 'El motor ha recibido ' .. engineDamage .. ' puntos de daño.' }
     })
 end)
+
+RegisterServerEvent('realistic-vehicle:guardarMantenimiento')
+AddEventHandler('realistic-vehicle:guardarMantenimiento', function(plate, km)
+    MySQL.Async.execute([[
+        INSERT INTO vehicle_maintenance (plate, last_maintenance_km)
+        VALUES (@plate, @km)
+        ON DUPLICATE KEY UPDATE last_maintenance_km = @km
+    ]], {
+        ['@plate'] = plate,
+        ['@km'] = km
+    })
+end)
+
+if Config.FrameWork == "esx" then
+    ESX.RegisterServerCallback('realistic-vehicle:getLastMaintenance', function(source, cb, plate)
+        MySQL.Async.fetchScalar('SELECT last_maintenance_km FROM vehicle_maintenance WHERE plate = @plate', {
+            ['@plate'] = plate
+        }, function(km)
+            cb(km or 0)
+        end)
+    end)
+elseif Config.FrameWork == "qb" then
+    QBCore.Functions.CreateCallback('realistic-vehicle:getLastMaintenance', function(source, cb, plate)
+        MySQL.Async.fetchScalar('SELECT last_maintenance_km FROM vehicle_maintenance WHERE plate = @plate', {
+            ['@plate'] = plate
+        }, function(km)
+            cb(km or 0)
+        end)
+    end)
+end
