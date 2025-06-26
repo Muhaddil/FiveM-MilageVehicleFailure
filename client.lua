@@ -298,6 +298,28 @@ Citizen.CreateThread(function()
     end
 end)
 
+function AplicarEfectos(vehicle, efectos)
+    if not DoesEntityExist(vehicle) or IsEntityDead(vehicle) then return end
+
+    if efectos.rpmMax then
+        SetVehicleEnginePowerMultiplier(vehicle, (efectos.rpmMax - 1.0) * 100.0)
+        SetVehicleEngineTorqueMultiplier(vehicle, efectos.rpmMax)
+    end
+
+    if efectos.humo then
+        UseParticleFxAssetNextCall("core")
+        StartParticleFxNonLoopedOnEntity("exp_grd_grenade_smoke", vehicle, 0.0, -2.5, 0.5, 0.0, 0.0, 0.0, 0.5, false, false, false)
+    end
+
+    if efectos.apagon then
+        SetVehicleEngineOn(vehicle, false, true, true)
+        SetVehicleUndriveable(vehicle, true)
+        Citizen.Wait(2000)
+        SetVehicleEngineOn(vehicle, true, true, false)
+        SetVehicleUndriveable(vehicle, false)
+    end
+end
+
 RegisterNetEvent('realistic-vehicle:breakdown')
 AddEventHandler('realistic-vehicle:breakdown', function(vehicle)
     local totalWeight = 0
