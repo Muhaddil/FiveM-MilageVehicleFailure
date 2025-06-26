@@ -232,13 +232,17 @@ Citizen.CreateThread(function()
                     vehicleKilometers[plate].km = vehicleKilometers[plate].km + distance
                     vehicleKilometers[plate].coords = currentCoords
 
-                    if Config.FrameWork == "esx" then
+                    local lastSaveTime = 0
+                    local saveInterval = 5 * 60 * 1000 -- 5 minutes in milliseconds
+
+                    if GetGameTimer() - lastSaveTime > saveInterval then
+                        lastSaveTime = GetGameTimer()
                         TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
-                    elseif Config.FrameWork == "qb" then
-                        TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
+                        DebugPrint('Guardando KM cada 5 minutos: ' .. vehicleKilometers[plate].km)
+                        DebugPrint('Guardando kilometros en la DataBase')
+                        DebugPrint('KM nuevos: ' .. vehicleKilometers[plate].km)
                     end
-                    DebugPrint('Guardando kilometros en la DataBase')
-                    DebugPrint('KM nuevos: ' .. vehicleKilometers[plate].km)
+
                     showKilometersInNUI(vehicleKilometers[plate].km, Config.KMDisplayPosition)
                 elseif Config.MileageSystem == 'other' then
                     fetchKilometers = function()
