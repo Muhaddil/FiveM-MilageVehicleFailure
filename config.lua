@@ -9,6 +9,7 @@ Config.ShowNotifications = true
 -- Config.BaseBreakdownChance = 0.1
 -- Config.MaxBreakdownChance = 1.0
 
+Config.EnableBreakDowns = true          -- Enable or disable breakdowns
 Config.CheckInterval = 10000            -- Cooldown in milliseconds
 Config.KMNUIInterval = 1000             -- Cooldown in milliseconds
 Config.KilometerMultiplier = 5.0        -- Multiplier for vehicle mileage accumulation. Set to 1.0 for normal rate, higher values will increase mileage faster, and lower values will decrease mileage accumulation.
@@ -20,6 +21,8 @@ Config.AutoRunSQL = true                -- If the script should run the SQL file
 Config.AutoVersionChecker = true        -- If the script should search for the latest version and warn you in the console if founds one
 Config.FrameWork = "esx"                -- Only compatible with esx or qb (for the moment)
 Config.UseOXNotifications = true        -- If the script uses the ox_libs notifications or framework ones
+
+Config.EnableDamaging = true            -- Enable or disable damaging vehicles
 Config.damageMultiplier = 5             -- Damage multiplier (general) applied to the engine in each crash
 Config.ApplyDamageAll = true            -- If the ApplyEngineDamage function applies the damage to the engine only or to engine/petroltank (if Config.ApplyDamagePetrol true)/body.
 Config.ApplyDamagePetrol = false        -- If the ApplyEngineDamage function applies the damage to petroltank, it can cause lots of fires.
@@ -56,7 +59,7 @@ Config.KMDisplayPosition = 'top-center' -- Available positions for the NUI: 'bot
 
 -- Config for the vehicle physics in harsh terrains
 Config.EnableCarPhysics = true
-Config.MaxSpeed = 40            -- In KM/hours
+Config.MaxSpeed = 40            -- Max speed in harsh terrains in KM/hours
 Config.CarPhysicsTimeout = 2500 -- In milliseconds
 Config.CarSinking = false       -- Works but it's as little bit buggy, not a great implementation
 Config.reductionFactor = 0.1    -- How fast the vehicles brake on sand/grass
@@ -441,10 +444,10 @@ Config.ExcludedPrefixes = {
     "AMB",
 }
 
-Config.MantenimientoPreventivo = true
-Config.KmParaMantenimiento = 500
-Config.CostoMantenimiento = 1000
-Config.FallosProgresivos = {
+Config.MantenimientoPreventivo = true -- If you want to enable the preventive maintenance system
+Config.KmParaMantenimiento = 500 -- Kilometers to reach before the preventive maintenance is required
+Config.CostoMantenimiento = 1000 -- Cost of the preventive maintenance
+Config.FallosProgresivos = { -- Progressive failures based on mileage
     [100] = { rpmMax = 0.7, notification = "Reducción de potencia detectada" },
     [200] = { humo = true, notification = "Humo en el escape - Necesita revisión" },
     [300] = { apagon = true, notification = "Fallos eléctricos detectados" }

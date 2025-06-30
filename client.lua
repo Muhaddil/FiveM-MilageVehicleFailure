@@ -199,104 +199,107 @@ local function isVehicleOwned(plate)
 end
 
 -- Main thread to update kilometers and handle breakdowns
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(Config.CheckInterval)
+if Config.EnableBreakDowns then
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(Config.CheckInterval)
 
-        local playerPed = PlayerPedId()
-        local vehicle = GetVehiclePedIsIn(playerPed, false)
+            local playerPed = PlayerPedId()
+            local vehicle = GetVehiclePedIsIn(playerPed, false)
 
-        if vehicle ~= 0 then
-            local plate = GetVehicleNumberPlateText(vehicle)
-            local currentCoords = GetEntityCoords(playerPed)
+            if vehicle ~= 0 then
+                local plate = GetVehicleNumberPlateText(vehicle)
+                local currentCoords = GetEntityCoords(playerPed)
 
-            if not isVehicleOwned(plate) then
-                DebugPrint('Vehículo no es de nadie, no se actualizarán los kilómetros')
-                goto continueLoop
-            end
+                if not isVehicleOwned(plate) then
+                    DebugPrint('Vehículo no es de nadie, no se actualizarán los kilómetros')
+                    goto continueLoop
+                end
 
-            if isVehicleExcluded(plate) or isVehicleExcludedPrefix(plate) then
-                DebugPrint('Vehículo excluido')
-                goto continueLoop
-            end
+                if isVehicleExcluded(plate) or isVehicleExcludedPrefix(plate) then
+                    DebugPrint('Vehículo excluido')
+                    goto continueLoop
+                end
 
-            if vehicleKilometers[plate] == nil then
-                loadKilometers(plate)
-            else
-                if Config.MileageSystem == 'default' then
-                    local oldCoords = vehicleKilometers[plate].coords or currentCoords
-                    local distance = calculateDistance(oldCoords, currentCoords) / 1000
+                if vehicleKilometers[plate] == nil then
+                    loadKilometers(plate)
+                else
+                    if Config.MileageSystem == 'default' then
+                        local oldCoords = vehicleKilometers[plate].coords or currentCoords
+                        local distance = calculateDistance(oldCoords, currentCoords) / 1000
 
-                    distance = distance * Config.KilometerMultiplier
+                        distance = distance * Config.KilometerMultiplier
 
-                    vehicleKilometers[plate].km = vehicleKilometers[plate].km + distance
-                    vehicleKilometers[plate].coords = currentCoords
+                        vehicleKilometers[plate].km = vehicleKilometers[plate].km + distance
+                        vehicleKilometers[plate].coords = currentCoords
 
-                    local lastSaveTime = 0
-                    local saveInterval = 5 * 60 * 1000 -- 5 minutes in milliseconds
+                        local lastSaveTime = 0
+                        local saveInterval = 5 * 60 * 1000 -- 5 minutes in milliseconds
 
-                    if GetGameTimer() - lastSaveTime > saveInterval then
-                        lastSaveTime = GetGameTimer()
-                        TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
-                        DebugPrint('Guardando KM cada 5 minutos: ' .. vehicleKilometers[plate].km)
-                        DebugPrint('Guardando kilometros en la DataBase')
-                        DebugPrint('KM nuevos: ' .. vehicleKilometers[plate].km)
-                    end
+                        if GetGameTimer() - lastSaveTime > saveInterval then
+                            lastSaveTime = GetGameTimer()
+                            TriggerServerEvent('realistic-vehicle:updateKilometers', plate, vehicleKilometers[plate].km)
+                            DebugPrint('Guardando KM cada 5 minutos: ' .. vehicleKilometers[plate].km)
+                            DebugPrint('Guardando kilometros en la DataBase')
+                            DebugPrint('KM nuevos: ' .. vehicleKilometers[plate].km)
+                        end
 
-                    showKilometersInNUI(vehicleKilometers[plate].km, Config.KMDisplayPosition)
-                elseif Config.MileageSystem == 'other' then
-                    fetchKilometers = function()
-                        local callback = function(km)
-                            if km then
-                                DebugPrint(km)
-                                vehicleKilometers[plate] = { km = km }
-                            else
-                                vehicleKilometers[plate] = { km = 0 }
+                        showKilometersInNUI(vehicleKilometers[plate].km, Config.KMDisplayPosition)
+                    elseif Config.MileageSystem == 'other' then
+                        fetchKilometers = function()
+                            local callback = function(km)
+                                if km then
+                                    DebugPrint(km)
+                                    vehicleKilometers[plate] = { km = km }
+                                else
+                                    vehicleKilometers[plate] = { km = 0 }
+                                end
+                                DebugPrint(vehicleKilometers[plate].km)
                             end
-                            DebugPrint(vehicleKilometers[plate].km)
+
+                            if Config.FrameWork == "esx" then
+                                ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', callback, plate)
+                            elseif Config.FrameWork == "qb" then
+                                QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', callback,
+                                    plate)
+                            end
                         end
+                        fetchKilometers()
+                    elseif Config.MileageSystem == 'jg-vehiclemileage' then
+                        local data = lib.callback.await("realistic-vehicle:get-mileage-JG", false, plate)
+                        if data then
+                            vehicleKilometers[plate] = { km = data.mileage }
+                        else
+                            vehicleKilometers[plate] = { km = 0 }
+                        end
+                        DebugPrint(vehicleKilometers[plate].km)
+                    end
 
-                        if Config.FrameWork == "esx" then
-                            ESX.TriggerServerCallback('realistic-vehicle:fetchKilometersFromDB', callback, plate)
-                        elseif Config.FrameWork == "qb" then
-                            QBCore.Functions.TriggerCallback('realistic-vehicle:fetchKilometersFromDB', callback, plate)
+                    local km = vehicleKilometers[plate].km
+                    local breakdownChance = math.min((km / 1000) * Config.BaseBreakdownChance, Config.MaxBreakdownChance)
+                    local currentTime = GetGameTimer()
+                    local lastBreakdownTime = vehicleCooldown[plate] or 0
+
+                    for kmfallos, efectos in pairs(Config.FallosProgresivos) do
+                        if km >= kmfallos then
+                            AplicarEfectos(vehicle, efectos)
                         end
                     end
-                    fetchKilometers()
-                elseif Config.MileageSystem == 'jg-vehiclemileage' then
-                    local data = lib.callback.await("realistic-vehicle:get-mileage-JG", false, plate)
-                    if data then
-                        vehicleKilometers[plate] = { km = data.mileage }
-                    else
-                        vehicleKilometers[plate] = { km = 0 }
-                    end
-                    DebugPrint(vehicleKilometers[plate].km)
-                end
 
-                local km = vehicleKilometers[plate].km
-                local breakdownChance = math.min((km / 1000) * Config.BaseBreakdownChance, Config.MaxBreakdownChance)
-                local currentTime = GetGameTimer()
-                local lastBreakdownTime = vehicleCooldown[plate] or 0
-
-                for kmfallos, efectos in pairs(Config.FallosProgresivos) do
-                    if km >= kmfallos then
-                        AplicarEfectos(vehicle, efectos)
+                    if (currentTime - lastBreakdownTime) >= Config.BreakdownCooldown then
+                        if math.random() < breakdownChance then
+                            TriggerEvent('realistic-vehicle:breakdown', vehicle)
+                            vehicleCooldown[plate] = currentTime
+                        end
                     end
                 end
-
-                if (currentTime - lastBreakdownTime) >= Config.BreakdownCooldown then
-                    if math.random() < breakdownChance then
-                        TriggerEvent('realistic-vehicle:breakdown', vehicle)
-                        vehicleCooldown[plate] = currentTime
-                    end
-                end
+            else
+                hideNUI()
             end
-        else
-            hideNUI()
+            ::continueLoop::
         end
-        ::continueLoop::
-    end
-end)
+    end)
+end
 
 function AplicarEfectos(vehicle, efectos)
     if not DoesEntityExist(vehicle) or IsEntityDead(vehicle) then return end
@@ -308,7 +311,8 @@ function AplicarEfectos(vehicle, efectos)
 
     if efectos.humo then
         UseParticleFxAssetNextCall("core")
-        StartParticleFxNonLoopedOnEntity("exp_grd_grenade_smoke", vehicle, 0.0, -2.5, 0.5, 0.0, 0.0, 0.0, 0.5, false, false, false)
+        StartParticleFxNonLoopedOnEntity("exp_grd_grenade_smoke", vehicle, 0.0, -2.5, 0.5, 0.0, 0.0, 0.0, 0.5, false,
+            false, false)
     end
 
     if efectos.apagon then
@@ -502,38 +506,40 @@ function ApplyEngineDamage(vehicle, damageAmount)
     end
 end
 
-Citizen.CreateThread(function()
-    while true do
-        local playerPed = PlayerPedId()
-        local vehicle = GetVehiclePedIsIn(playerPed, false)
+if Config.EnableDamaging then
+    Citizen.CreateThread(function()
+        while true do
+            local playerPed = PlayerPedId()
+            local vehicle = GetVehiclePedIsIn(playerPed, false)
 
-        if DoesEntityExist(vehicle) and IsPedInAnyVehicle(playerPed, false) then
-            checkInterval2 = 200
-            local currentSpeed = GetEntitySpeed(vehicle) * 3.6
-            local speedDifference = previousSpeed - currentSpeed
+            if DoesEntityExist(vehicle) and IsPedInAnyVehicle(playerPed, false) then
+                checkInterval2 = 200
+                local currentSpeed = GetEntitySpeed(vehicle) * 3.6
+                local speedDifference = previousSpeed - currentSpeed
 
-            local vehicleClass = GetVehicleClass(vehicle)
-            local damageMultiplier = Config.damageMultiplier
+                local vehicleClass = GetVehicleClass(vehicle)
+                local damageMultiplier = Config.damageMultiplier
 
-            if Config.ClassDamageMultipliers[vehicleClass] then
-                damageMultiplier = Config.ClassDamageMultipliers[vehicleClass].damageMultiplier
-                DebugPrint("Multiplicador de daño para la clase " .. vehicleClass .. ": " .. damageMultiplier)
-            else
-                DebugPrint("Clase de vehículo no encontrada, usando multiplicador por defecto.")
+                if Config.ClassDamageMultipliers[vehicleClass] then
+                    damageMultiplier = Config.ClassDamageMultipliers[vehicleClass].damageMultiplier
+                    DebugPrint("Multiplicador de daño para la clase " .. vehicleClass .. ": " .. damageMultiplier)
+                else
+                    DebugPrint("Clase de vehículo no encontrada, usando multiplicador por defecto.")
+                end
+
+                if speedDifference > 50 then
+                    local damageAmount = speedDifference * damageMultiplier / 2
+                    DebugPrint('Daño al motor: ' .. damageAmount)
+                    ApplyEngineDamage(vehicle, damageAmount)
+                end
+
+                previousSpeed = currentSpeed
             end
 
-            if speedDifference > 50 then
-                local damageAmount = speedDifference * damageMultiplier / 2
-                DebugPrint('Daño al motor: ' .. damageAmount)
-                ApplyEngineDamage(vehicle, damageAmount)
-            end
-
-            previousSpeed = currentSpeed
+            Citizen.Wait(checkInterval2)
         end
-
-        Citizen.Wait(checkInterval2)
-    end
-end)
+    end)
+end
 
 
 --   ooooooooo.   ooooooooo.   oooooooooooo oooooo     oooo oooooooooooo ooooo      ooo ooooooooooooo      oooooo     oooo oooooooooooo ooooo   ooooo ooooo   .oooooo.   ooooo        oooooooooooo      oooooooooooo ooooo        ooooo ooooooooo.
@@ -1265,28 +1271,30 @@ if Config.EnableCarPhysics then
     end
 end
 
-Citizen.CreateThread(function()
-    while true do
-        Citizen.Wait(1000)
-        local playerPed = PlayerPedId()
-        if IsPedInAnyVehicle(playerPed, false) then
-            local vehicle = GetVehiclePedIsIn(playerPed, false)
-            local plate = GetVehicleNumberPlateText(vehicle)
-            local class = GetVehicleClass(vehicle)
-            local resistencia = Config.ResistenciaVehiculos[class] or 1.0
+if Config.MantenimientoPreventivo then
+    Citizen.CreateThread(function()
+        while true do
+            Citizen.Wait(1000)
+            local playerPed = PlayerPedId()
+            if IsPedInAnyVehicle(playerPed, false) then
+                local vehicle = GetVehiclePedIsIn(playerPed, false)
+                local plate = GetVehicleNumberPlateText(vehicle)
+                local class = GetVehicleClass(vehicle)
+                local resistencia = Config.ResistenciaVehiculos[class] or 1.0
 
-            local km = loadKilometers(plate)
+                local km = loadKilometers(plate)
 
-            CheckPreventiveMaintenance(vehicle, plate, km)
+                CheckPreventiveMaintenance(vehicle, plate, km)
 
-            ApplyProgressiveFailures(vehicle, km, resistencia)
+                ApplyProgressiveFailures(vehicle, km, resistencia)
 
-            ApplyWearPartsEffects(vehicle, km)
+                ApplyWearPartsEffects(vehicle, km)
+            end
+
+            CleanupEffects()
         end
-
-        CleanupEffects()
-    end
-end)
+    end)
+end
 
 function CheckPreventiveMaintenance(vehicle, plate, km)
     if not Config.MantenimientoPreventivo then return end
